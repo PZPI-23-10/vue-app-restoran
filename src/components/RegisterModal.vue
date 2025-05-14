@@ -107,6 +107,7 @@ function togglePassword() {
   width: 360px;
   max-width: 90%;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  animation: fadeInModal 0.4s ease-out;
 }
 
 .title {
@@ -119,6 +120,17 @@ function togglePassword() {
   margin-top: 16px;
   margin-bottom: 6px;
   font-weight: 500;
+}
+
+@keyframes fadeInModal {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .input-field {
