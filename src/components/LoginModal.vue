@@ -24,6 +24,11 @@
           </button>
         </div>
 
+        <div class="remember-me">
+          <input type="checkbox" id="remember" v-model="rememberMe" />
+          <label for="remember">Запам'ятати мене</label>
+        </div>
+
       <button class="login-button" @click="handleLogin">Увійти</button>
 
       <div class="links">
@@ -47,6 +52,7 @@ defineProps({
 
 const emit = defineEmits(['close', 'forgot', 'register'])
 
+const rememberMe = ref(false)
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
@@ -156,6 +162,20 @@ function handleBackdropClick() {
   border-radius: 6px;
   font-size: 15px;
   box-sizing: border-box;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: #333;
+}
+.remember-me input {
+  accent-color: #FF6F61;
+  width: 16px;
+  height: 16px;
 }
 
 .login-button {
