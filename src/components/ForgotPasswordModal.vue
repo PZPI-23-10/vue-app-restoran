@@ -52,16 +52,21 @@ function handleBackdropClick() {
   align-items: center;
   justify-content: center;
   z-index: 999;
+  padding: 16px; 
+  box-sizing: border-box; 
 }
 
 .modal-content {
   background: #fff;
   padding: 28px;
   border-radius: 12px;
-  width: 340px;
-  max-width: 90%;
+  width: 100%;
+  max-width: 360px;
+  max-height: 100%;     
+  overflow-y: auto;   
   box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
   animation: fadeInContent 0.4s ease-out;
+  box-sizing: border-box; 
 }
 
 .title {

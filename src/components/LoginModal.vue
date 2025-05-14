@@ -78,6 +78,8 @@ function handleBackdropClick() {
   justify-content: center;
   z-index: 999;
   animation: fadeInBackdrop 0.4s ease-out;
+  padding: 16px; 
+  box-sizing: border-box; 
 }
 
 @keyframes fadeInBackdrop {
@@ -93,10 +95,13 @@ function handleBackdropClick() {
   background: #fff;
   padding: 24px;
   border-radius: 12px;
-  width: 320px;
-  max-width: 90%;
+  width: 100%;
+  max-width: 360px;
+  max-height: 100%; 
+  overflow-y: auto;  
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   animation: fadeInContent 0.5s ease-out;
+  box-sizing: border-box;
 }
 
 @keyframes fadeInContent {

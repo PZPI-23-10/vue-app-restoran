@@ -94,6 +94,8 @@ function togglePassword() {
   align-items: center;
   justify-content: center;
   z-index: 999;
+  padding: 16px; 
+  box-sizing: border-box;
 }
 
 .no-backdrop-animation {
@@ -104,10 +106,13 @@ function togglePassword() {
   background: #fff;
   padding: 24px;
   border-radius: 12px;
-  width: 360px;
-  max-width: 90%;
+  width: 100%;
+  max-width: 400px;
+  max-height: 100%;
+  overflow-y: auto;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
   animation: fadeInModal 0.4s ease-out;
+  box-sizing: border-box;
 }
 
 .title {
