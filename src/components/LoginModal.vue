@@ -68,6 +68,7 @@ function handleLogin() {
 function handleBackdropClick() {
   emit('close')
 }
+
 </script>
 
 <style scoped>

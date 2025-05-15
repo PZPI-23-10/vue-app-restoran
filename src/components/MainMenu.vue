@@ -3,7 +3,7 @@
     <div class="left-side">
       <span class="logo-text">Сервіс для ресторанів</span>
       <div class="divider"></div>
-      <span class="material-icons">location_on</span>
+      <LocationDropdown/>
     </div>
 
      <div class="right-buttons">
@@ -40,13 +40,14 @@
 import LoginModal from './LoginModal.vue'
 import RegisterModal from './RegisterModal.vue'
 import ForgotPasswordModal from './ForgotPasswordModal.vue'
-
+import LocationDropdown from './LocationDropdown.vue'
 export default {
   name: 'MainMenu',
   components: {
     LoginModal,
     RegisterModal,
     ForgotPasswordModal,
+   LocationDropdown // ✅ додай цей рядок
   },
   data() {
     return {

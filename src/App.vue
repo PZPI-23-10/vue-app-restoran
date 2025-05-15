@@ -1,21 +1,33 @@
 <template>
-  <div id="app">
-    <MainMenu />
-    <router-view />
-  </div>
+    <MainMenu/>
+  <router-view />
+      <Footer />
 </template>
 
 <script>
-import MainMenu from './components/MainMenu.vue'
+import { createRouter, createWebHistory } from 'vue-router'
+import Home from './views/Home.vue'
+import RestaurantPage from './views/RestaurantPage.vue'
+import MainMenu from './components/MainMenu.vue' 
+import Footer from './components/Footer.vue'
+const routes = [
+  { path: '/', component: Home },
+  { path: '/restaurants', component: RestaurantPage }
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+})
 
 export default {
   name: 'App',
   components: {
-    MainMenu
-  }
+    MainMenu , Footer
+  },
+  router
 }
 </script>
-
 <style>
 body {
   margin: 0;
@@ -24,8 +36,11 @@ body {
   color: #000;
 }
 
+html,
+body,
 #app {
-  min-height: 100vh;
+  height: 100%;
+  margin: 0;
   display: flex;
   flex-direction: column;
 }

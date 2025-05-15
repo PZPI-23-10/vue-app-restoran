@@ -1,11 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomePage from '../views/Home.vue'
+import Home from '../views/Home.vue'
+import RestaurantPage from '../views/RestaurantPage.vue'
 
 const routes = [
+  { path: '/', component: Home },
   {
-    path: '/',
-    name: 'Home',
-    component: HomePage
+    path: '/restaurants/:city', // Параметр city в URL
+    name: 'RestaurantPage',
+    component: RestaurantPage,
+    props: true  // Передаем параметры как пропсы в компонент
   }
 ]
 
