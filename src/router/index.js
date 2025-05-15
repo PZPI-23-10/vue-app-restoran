@@ -9,7 +9,7 @@ const routes = [
     path: '/restaurants/:city', // Параметр city в URL
     name: 'RestaurantPage',
     component: RestaurantPage,
-    props: true  // Передаем параметры как пропсы в компонент
+    props: true  
   },
   {
     path: '/create-restaurant',
