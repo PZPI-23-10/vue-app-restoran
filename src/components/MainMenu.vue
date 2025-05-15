@@ -6,16 +6,76 @@
       <span class="material-icons">location_on</span>
     </div>
 
-    <div class="right-buttons">
+     <div class="right-buttons">
       <button class="download-btn">Завантажити додаток</button>
-      <button class="login-btn">Увійти</button>
+      <button class="login-btn" @click="openLogin">Увійти</button>
     </div>
   </header>
+
+  <LoginModal
+    :visible="showLogin"
+    :transitionOnlyContent="transitionOnly"
+    @close="showLogin = false"
+    @register="openRegister"
+    @forgot="openForgot"
+  />
+
+  <RegisterModal
+    :visible="showRegister"
+    :transitionOnlyContent="transitionOnly"
+    @close="showRegister = false"
+    @hasAccount="openLogin"
+  />
+
+  <ForgotPasswordModal
+    :visible="showForgot"
+    :transitionOnlyContent="transitionOnly"
+    @close="showForgot = false"
+    @back="openLogin"
+  />
+
 </template>
 
 <script>
+import LoginModal from './LoginModal.vue'
+import RegisterModal from './RegisterModal.vue'
+import ForgotPasswordModal from './ForgotPasswordModal.vue'
+
 export default {
-  name: 'MainMenu'
+  name: 'MainMenu',
+  components: {
+    LoginModal,
+    RegisterModal,
+    ForgotPasswordModal,
+  },
+  data() {
+    return {
+      showLogin: false,
+      showRegister: false,
+      showForgot: false,
+      transitionOnly: false
+    }
+  },
+  methods: {
+    openLogin() {
+      this.transitionOnly = this.showRegister || this.showForgot
+      this.showLogin = true
+      this.showRegister = false
+      this.showForgot = false
+    },
+    openRegister() {
+      this.transitionOnly = this.showLogin
+      this.showRegister = true
+      this.showLogin = false
+      this.showForgot = false
+    },
+    openForgot() {
+      this.transitionOnly = true
+      this.showForgot = true
+      this.showLogin = false
+      this.showRegister = false
+    }
+  }
 }
 </script>
 
