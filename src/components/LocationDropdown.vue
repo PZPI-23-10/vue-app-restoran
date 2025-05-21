@@ -61,9 +61,10 @@ function selectRegion(region) {
 
 // Переход на страницу ресторана
 function goToRestaurantPage(city) {
-  router.push({ name: 'RestaurantPage', params: { city } })
-  open.value = false // Закрываем дропдаун после клика на город
+  router.push({ name: 'RestaurantPageList', params: { city } })
+  open.value = false
 }
+
 
 // Закрытие дропдауна при клике вне компонента
 function handleClickOutside(event) {

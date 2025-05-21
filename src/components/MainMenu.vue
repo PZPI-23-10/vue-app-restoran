@@ -1,7 +1,7 @@
 <template>
   <header class="main-header">
     <div class="left-side">
-      <span class="logo-text">Сервіс для ресторанів</span>
+      <router-link to="/" class="logo-text">Сервіс для ресторанів</router-link>
       <div class="divider"></div>
       <LocationDropdown/>
     </div>
@@ -47,7 +47,7 @@ export default {
     LoginModal,
     RegisterModal,
     ForgotPasswordModal,
-   LocationDropdown // ✅ додай цей рядок
+   LocationDropdown 
   },
   data() {
     return {
@@ -129,5 +129,11 @@ export default {
 .download-btn:hover,
 .login-btn:hover {
   background-color: #e25b4e;
+}
+.logo-text {
+  font-size: 20px;
+  font-weight: 500;
+  color: #333;
+  text-decoration: none;
 }
 </style>

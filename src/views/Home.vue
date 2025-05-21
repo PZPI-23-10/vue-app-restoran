@@ -29,15 +29,15 @@
     <h2 class="cities-title">Міста з якими працює сервіс для ресторанів</h2>
 
     <div class="city-grid">
-      <div class="city-item">Київ ▼</div>
-      <div class="city-item">Місто ▼</div>
-      <div class="city-item">Місто ▼</div>
-      <div class="city-item">Місто ▼</div>
-      <div class="city-item">Місто ▼</div>
-      <div class="city-item">Місто ▼</div>
-      <div class="city-item">Місто ▼</div>
-      <div class="city-item">Місто ▼</div>
-      <div class="city-item">Місто ▼</div>
+      <div class="city-item">Київ   <span class="material-icons arrow" :class="{ rotated: isOpen }">expand_more</span></div>
+      <div class="city-item">Місто   <span class="material-icons arrow" :class="{ rotated: isOpen }">expand_more</span></div>
+      <div class="city-item">Місто  <span class="material-icons arrow" :class="{ rotated: isOpen }">expand_more</span></div>
+      <div class="city-item">Місто   <span class="material-icons arrow" :class="{ rotated: isOpen }">expand_more</span></div>
+      <div class="city-item">Місто   <span class="material-icons arrow" :class="{ rotated: isOpen }">expand_more</span></div>
+      <div class="city-item">Місто   <span class="material-icons arrow" :class="{ rotated: isOpen }">expand_more</span></div>
+      <div class="city-item">Місто   <span class="material-icons arrow" :class="{ rotated: isOpen }">expand_more</span></div>
+      <div class="city-item">Місто   <span class="material-icons arrow" :class="{ rotated: isOpen }">expand_more</span></div>
+      <div class="city-item">Місто   <span class="material-icons arrow" :class="{ rotated: isOpen }">expand_more</span></div>
     </div>
   </div>
 </template>

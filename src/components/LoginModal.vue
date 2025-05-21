@@ -60,10 +60,39 @@ const showPassword = ref(false)
 function togglePassword() {
   showPassword.value = !showPassword.value
 }
+async function handleLogin() {
+  try {
+    const response = await fetch('https://backend-restoran.onrender.com/api/Account/Login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: email.value,
+        password: password.value
+      })
+    })
 
-function handleLogin() {
-  console.log('Вхід з', email.value, password.value)
+    const data = await response.json()
+    console.log('API response:', data)
+
+    if (!response.ok) {
+      throw new Error(data?.message || 'Невірна електронна пошта або пароль')
+    }
+
+    localStorage.setItem('token', data.accessToken)
+    localStorage.setItem('userId', data.userId)
+    localStorage.setItem('isAuthenticated', 'true')
+
+    emit('close')
+    window.location.href = '/profile'
+  } catch (error) {
+    console.error(error)
+    alert(error.message)
+  }
 }
+
+
 
 function handleBackdropClick() {
   emit('close')

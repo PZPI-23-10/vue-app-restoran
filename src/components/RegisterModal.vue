@@ -1,7 +1,11 @@
 <template>
-<div
-  class="modal-backdrop"v-if="visible"@click="handleBackdropClick":class="{ 'no-backdrop-animation': transitionOnlyContent }">   
-   <div class="modal-content" @click.stop>
+  <div
+    class="modal-backdrop"
+    v-if="visible"
+    @click="handleBackdropClick"
+    :class="{ 'no-backdrop-animation': transitionOnlyContent }"
+  >
+    <div class="modal-content" @click.stop>
       <h2 class="title">Реєстрація</h2>
 
       <label class="input-label">Ім’я</label>
@@ -21,26 +25,34 @@
 
       <label class="input-label">Пароль</label>
       <div class="password-wrapper">
-        <input :type="showPassword ? 'text' : 'password'" v-model="password" class="input-field" placeholder="Введіть пароль" />
-        <button class="toggle-password" @click="togglePassword" type="button">{{ showPassword ? '🙈' : '👁' }}</button>
+        <input
+          :type="showPassword ? 'text' : 'password'"
+          v-model="password"
+          class="input-field"
+          placeholder="Введіть пароль"
+        />
+        <button class="toggle-password" @click="togglePassword" type="button">
+          {{ showPassword ? '🙈' : '👁' }}
+        </button>
       </div>
 
       <div class="terms-wrapper">
-      <input type="checkbox" v-model="agree" />
-      <span>
-        Створюючи обліковий запис, я погоджуюсь з
-        <span class="link" @click="showTerms = true">умовами користування сервісом.</span>
-      </span>
+        <input type="checkbox" v-model="agreeTerms" />
+        <span>
+          Створюючи обліковий запис, я погоджуюсь з
+          <span class="link" @click="showTerms = true">умовами користування сервісом.</span>
+        </span>
       </div>
+
+      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
       <div class="links">
         <span class="link" @click="$emit('hasAccount')">Увійти</span>
       </div>
 
-      <button class="register-button">Зареєструватися</button>
+      <button class="register-button" @click="handleRegister">Зареєструватися</button>
 
       <TermsModal :visible="showTerms" @close="showTerms = false" />
-
     </div>
   </div>
 </template>
@@ -48,7 +60,6 @@
 <script setup>
 import { ref } from 'vue'
 import TermsModal from './TermsModal.vue'
-
 
 defineProps({
   visible: Boolean,
@@ -69,15 +80,67 @@ const password = ref('')
 const agreeTerms = ref(false)
 const showTerms = ref(false)
 const showPassword = ref(false)
-
-function handleBackdropClick() {
-  emit('close')
-}
+const errorMessage = ref('')
 
 function togglePassword() {
   showPassword.value = !showPassword.value
 }
 
+function handleBackdropClick() {
+  emit('close')
+}
+async function handleRegister() {
+  errorMessage.value = ''
+
+  if (!agreeTerms.value) {
+    errorMessage.value = 'Потрібно погодитись з умовами користування.'
+    return
+  }
+
+  try {
+    const response = await fetch('https://backend-restoran.onrender.com/api/Account/Register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        firstName: firstName.value,
+        lastName: lastName.value,
+        middleName: middleName.value,
+        email: email.value,
+        password: password.value,
+        address: address.value
+      })
+    })
+
+    let dataText = ''
+    let dataJson = {}
+    const contentType = response.headers.get('content-type')
+
+    if (contentType && contentType.includes('application/json')) {
+      dataJson = await response.json()
+    } else {
+      dataText = await response.text()
+    }
+
+    if (!response.ok) {
+      if (response.status === 400) {
+        errorMessage.value = dataJson.message || dataText || 'Некоректні дані'
+      } else if (response.status === 409) {
+        errorMessage.value = 'Користувач з такою поштою вже існує.'
+      } else {
+        errorMessage.value = dataJson.message || dataText || 'Помилка під час реєстрації.'
+      }
+      return
+    }
+
+    emit('close')
+    alert('Реєстрація успішна! Тепер увійдіть.')
+  } catch (error) {
+    errorMessage.value = error.message || 'Сталася непередбачувана помилка.'
+    console.error(error)
+  }
+}
 
 </script>
 
@@ -94,7 +157,7 @@ function togglePassword() {
   align-items: center;
   justify-content: center;
   z-index: 999;
-  padding: 16px; 
+  padding: 16px;
   box-sizing: border-box;
 }
 
@@ -204,5 +267,12 @@ function togglePassword() {
 .terms-wrapper a {
   color: #007bff;
   text-decoration: underline;
+}
+
+.error-message {
+  color: red;
+  margin-top: 12px;
+  text-align: center;
+  font-size: 14px;
 }
 </style>

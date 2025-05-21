@@ -7,13 +7,14 @@
 <script>
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from './views/Home.vue'
-import RestaurantPage from './views/RestaurantPage.vue'
+import RestaurantPageList from './views/RestaurantPageList.vue'
 import MainMenu from './components/MainMenu.vue' 
 import Footer from './components/Footer.vue'
 const routes = [
   { path: '/', component: Home },
-  { path: '/restaurants', component: RestaurantPage }
+  { path: '/restaurants', component: RestaurantPageList }
 ]
+
 
 const router = createRouter({
   history: createWebHistory(),
