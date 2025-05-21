@@ -47,7 +47,7 @@ export default {
     LoginModal,
     RegisterModal,
     ForgotPasswordModal,
-   LocationDropdown // ✅ додай цей рядок
+    LocationDropdown 
   },
   data() {
     return {

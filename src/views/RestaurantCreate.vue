@@ -52,11 +52,58 @@
     </div>
 
     <div class="middle-buttons">
-      <button>Додати страву</button>
-      <button>Встановити робочі години</button>
-      <button>Зареєструвати модераторів</button>
-    </div>
+      <button @click="openDishesList" class="view-btn">
+        🍽️ Переглянути меню
+      </button>
+      <button @click="openAddWorkers">Додати модератора</button>
+      <button @click="openAddWorkHours">Графік роботи</button>
 
+      <button @click="openManagersList" class="view-btn">
+        👨‍🍳 Переглянути модераторів
+      </button>
+    </div> 
+    <transition name="fade-slide">
+    <DishesList 
+      v-if="activeForm === 'dishes'"
+      :visible="true"
+      :dishes="dishes"
+      @close="closeForm"
+      @edit-dish="openEditDish"
+      @add-dish="openAddDish"
+      @delete-dish="handleDeleteDish"
+    />
+    </transition>
+
+    <ManagersList 
+      v-if="activeForm === 'managers'"
+      :visible="true"
+      @close="closeForm"
+      @edit-manager="editWorker"
+    />
+
+    <transition name="fade-scale">
+    <AddDish
+      v-if="activeForm === 'dish'"
+      :visible="true"
+      :dishData="currentItem"
+      @submit="handleFormSubmit"
+      @update-dish="handleDishUpdate"
+      @close="closeForm"
+      @show-dishes="activeForm = 'dishes'"
+    />
+    </transition>
+
+    <AddWorkers
+      v-if="activeForm === 'workers'"
+      :workerData="currentItem"
+      @submit="handleFormSubmit"
+      @close="closeForm"
+    />
+    <AddWorkHours
+      v-if="activeForm === 'hours'"
+      @close="closeForm"
+    />
+        
     <div class="constructor-section">
       <div class="elements-layout">
         <div class="elements-left">
@@ -67,7 +114,7 @@
               v-for="el in leftElements" 
               :key="el.id"
               draggable="true"
-              @dragstart="onDragStart(el)"
+              @dragstart="(event) => onDragStart(el, event)"
             >
               <img :src="el.image" class="element-img" />
               <span>{{ el.title }}</span>
@@ -75,45 +122,72 @@
           </div>
         </div>
 
-        <div class="restaurant-area">
-          <h3>Поле ресторану</h3>
-         <div class="restaurant-grid">
-          <div 
-            v-for="(cell, index) in 96" 
-            :key="index" 
-            class="grid-cell" 
-            @dragover.prevent 
+        <div class="restaurant-layout-container">
+        <div class="restaurant-grid" v-if="gridElements">
+          <div
+            v-for="(cell, index) in 120"
+            :key="index"
+            class="grid-cell"
+            @dragover.prevent
             @drop="onDrop(index)"
-            @click="handleCellClick(index)"
           >
-            <div v-if="gridElements[index]" class="grid-item">
-              <img 
-                :src="gridElements[index].image" 
+            <div
+              v-if="gridElements[index]"
+              class="grid-item"
+              draggable="true"
+              @dragstart="onGridItemDragStart(index)"
+              @click.stop="handleGridItemClick(index)"
+            >
+              <img
+                :src="gridElements[index].image"
                 class="placed-element"
                 :style="{ transform: 'rotate(' + (gridElements[index].rotation || 0) + 'deg)' }"
               />
             </div>
-          </div>       
+          </div>
         </div>
-        <div class="mode-toggle">
-          <label>
-            <input type="radio" value="edit" v-model="mode" />
-            Редагування
-          </label>
-          <label>
-            <input type="radio" value="delete" v-model="mode" />
-            Видалення
-          </label>
-        </div>
+
+          <div class="floor-controls">
+            <div class="floor-buttons">
+              <button @click="addFloor">+ Додати поверх</button>
+              <button @click="removeFloor" :disabled="restaurantData.layout.length === 1">- Видалити</button>
+            </div>
+            <div class="floor-tabs">
+              <button
+                v-for="(floor, index) in restaurantData.layout"
+                :key="index"
+                :class="{ active: index === activeFloorIndex }"
+                @click="switchFloor(index)"
+              >
+                Поверх {{ index + 1 }}
+              </button>
+            </div>
+          </div>
           <div class="elements-bottom">
             <h3>Конструктор</h3>
+              <div class="mode-buttons">
+                <button 
+                  :class="['mode-btn', { active: interactionMode === 'default', green: interactionMode === 'default' }]"
+                  @click="setInteractionMode('default')"
+                >Переміщення</button>
+
+                <button 
+                  :class="['mode-btn', { active: interactionMode === 'rotate', blue: interactionMode === 'rotate' }]"
+                  @click="setInteractionMode('rotate')"
+                >Поворот</button>
+
+                <button 
+                  :class="['mode-btn', { active: interactionMode === 'delete', red: interactionMode === 'delete' }]"
+                  @click="setInteractionMode('delete')"
+                >Видалення</button>
+              </div>
             <div class="elements-horizontal">
             <div 
               class="element-btn-horizontal" 
               v-for="el in bottomElements" 
               :key="el.id"
               draggable="true"
-              @dragstart="onDragStart(el)"
+              @dragstart="(event) => onDragStart(el, event)"
             >
               <img :src="el.image" class="element-img" />
               <span>{{ el.title }}</span>
@@ -123,7 +197,6 @@
         </div>
       </div>
     </div>
-
     <div class="action-buttons">
       <button class="cancel-btn">Скасувати</button>
       <button class="publish-btn">Опублікувати</button>
@@ -132,18 +205,46 @@
 </template>
 
 <script>
+import DishesList from '../components/DishesList.vue';
+import ManagersList from '../components/ManagersList.vue';
+import AddDish from '../components/AddDish.vue';
+import AddWorkers from '../components/AddWorkers.vue';
+import AddWorkHours from '../components/AddWorkHours.vue';
+
 export default {
   name: 'RestaurantCreate',
+  components: {
+    DishesList,
+    ManagersList,
+    AddDish,
+    AddWorkers,
+    AddWorkHours
+  },
   data() {
     return {
-      mode: 'edit',
-      cuisineOptions: ['Італійська кухня', 'Українська кухня'],
-      tagOptions: ['Романтика', 'Сімейне', 'Ділові зустрічі'],
+      restaurantData: {
+        name: '',
+        description: '',
+        photo: null,
+        cuisine: [],
+        tags: [],
+        layout: [Array.from({ length: 120 }, () => null)],
+        dishes: [],
+        managers: []
+      },
       selectedCuisine: [],
       selectedTags: [],
+      activeForm: null,
+      interactionMode: 'default',
+      cuisineOptions: ['Італійська кухня', 'Українська кухня'],
+      tagOptions: ['Романтика', 'Сімейне', 'Ділові зустрічі'],
+      currentItem: null,
+      rotationDuringDrag: 0,
       previewImage: null,
       draggedElement: null,
-      gridElements: Array(96).fill(null),
+      previewX: 0,
+      previewY: 0,
+      activeFloorIndex: 0,
       leftElements: [
         { id: 1, title: 'Пряма стіна', image: '/images/wall.png' },
         { id: 2, title: 'Окружність', image: '/images/circle.png' },
@@ -156,90 +257,319 @@ export default {
         { id: 7, title: 'Місце на багатьох', image: '/images/tableForMany.png' },
         { id: 8, title: 'Столи з диваном/кріслом', image: '/images/tableWithSofa.png' },
         { id: 9, title: 'Барна стійка', image: '/images/bar.png' },
-        { id: 10, title: 'Освітлення', image: '/images/ligthSource.png' },
         { id: 11, title: 'Сходи', image: '/images/stairs.png' }
-      ]
+      ],
     }
   },
+  computed: {
+    gridElements() {
+      return this.restaurantData.layout[this.activeFloorIndex];
+    }
+  },
+  created() {
+    this.loadDishes();
+    this.initializeData();
+  },
   methods: {
-    triggerFileInput() {
-    this.$refs.fileInput.click();
+    openForm(type, item = null) {
+      this.activeForm = type;
+      this.currentItem = item;
+    },
+    closeForm() {
+      this.activeForm = null;
+      this.currentItem = null;
+    },
+    openDishesList() {
+      this.activeForm = 'dishes';
+    },
+    openManagersList() {
+      this.activeForm = 'managers';
+    },
+    handleFormSubmit(itemData) {
+      const type = this.activeForm;
+      const key = type === 'dish' ? 'dishes' : 'workers'; 
+      const collection = this.restaurantData[key];
+
+      if (itemData.id) {
+        const index = collection.findIndex(i => i.id === itemData.id);
+        if (index !== -1) collection.splice(index, 1, itemData);
+      } else {
+        itemData.id = Date.now();
+        collection.push(itemData);
+      }
+
+      localStorage.setItem(`restaurant_${key}`, JSON.stringify(collection));
+      this[key] = [...collection];
+
+      if (type === 'dish') {
+        this.activeForm = 'dishes';
+        this.currentItem = null;
+      } else {
+        this.closeForm();
+      }
+    },
+
+    handleDishUpdate(updatedDish) {
+      const index = this.restaurantData.dishes.findIndex(d => d.id === updatedDish.id);
+      if (index !== -1) {
+        this.restaurantData.dishes.splice(index, 1, updatedDish);
+        this.dishes = [...this.restaurantData.dishes];
+        localStorage.setItem('restaurant_dishes', JSON.stringify(this.restaurantData.dishes));
+      }
+
+      this.activeForm = 'dishes';
+      this.currentItem = null;
+    },
+
+    loadDishes() {
+        try {
+          const saved = localStorage.getItem('restaurant_dishes');
+          this.dishes = saved ? JSON.parse(saved) : [];
+          this.restaurantData.dishes = this.dishes;
+        } catch (e) {
+          console.error('Ошибка загрузки блюд:', e);
+          this.dishes = [];
+        }
+      },
+        initializeData() {
+      if (!localStorage.getItem('restaurant_dishes')) {
+        localStorage.setItem('restaurant_dishes', JSON.stringify([
+          {
+            id: 1,
+            name: "Приклад",
+            price: 100,
+            weight: 300,
+            ingredients: "Ваш текст"
+          }
+        ]));
+      } else {
+        this.dishes = JSON.parse(localStorage.getItem('restaurant_dishes'));
+      }
+      
+      if (!localStorage.getItem('restaurant_workers')) {
+        localStorage.setItem('restaurant_workers', JSON.stringify([
+          {
+            id: 1,
+            name: "Іван Петренко",
+            phone: "+380991234567"
+          }
+        ]));
+      } else {
+        this.workers = JSON.parse(localStorage.getItem('restaurant_workers'));
+      }
+    },
+
+    openAddDish() {
+      this.openForm('dish');
+    },
+    openEditDish(dish) {
+      this.openForm('dish', dish);
+    },
+    closeAddDish() {
+      this.showAddDish = false;
+      this.editingDish = null;
+    },
+   handleSaveDish(dish) {
+      if (dish.id) {
+        const index = this.restaurantData.dishes.findIndex(d => d.id === dish.id);
+        if (index !== -1) {
+          this.restaurantData.dishes.splice(index, 1, dish);
+        }
+      } else {
+        dish.id = Date.now();
+        this.restaurantData.dishes.push(dish);
+      }
+      this.closeAddDish();
+    },
+    openAddWorkers() {
+      this.activeForm = 'workers';
+    },
+    openAddWorkHours() {
+      this.activeForm = 'hours';
+    },
+        
+    addFloor() {
+      this.restaurantData.layout.push(Array(120).fill(null));
+      this.activeFloorIndex = this.restaurantData.layout.length - 1;
+    },
+
+    removeFloor() {
+      if (this.restaurantData.layout.length > 1) {
+        this.restaurantData.layout.pop();
+        this.activeFloorIndex = Math.max(0, this.activeFloorIndex - 1);
+      }
+    },
+
+    switchFloor(index) {
+      if (index >= 0 && index < this.restaurantData.layout.length) {
+        this.activeFloorIndex = index;
+      }
     },
     
+    setInteractionMode(mode) {
+      this.interactionMode = mode;
+    },
+
+    triggerFileInput() {
+      this.$refs.fileInput.click();
+    },
+
     addTag(event, type) {
       const value = event.target.value;
       if (!value) return;
 
-      if (type === 'cuisine' && !this.selectedCuisine.includes(value)) {
-        this.selectedCuisine.push(value);
+      if (type === 'cuisine' && !this.restaurantData.cuisine.includes(value)) {
+        this.restaurantData.cuisine.push(value);
       }
-      if (type === 'tags' && !this.selectedTags.includes(value)) {
-        this.selectedTags.push(value);
+      if (type === 'tags' && !this.restaurantData.tags.includes(value)) {
+        this.restaurantData.tags.push(value);
       }
 
       event.target.selectedIndex = 0;
     },
-    onDragStart(el) {
-    this.draggedElement = el;
-    console.log('STARTED DRAGGING:', el);
+
+    onGridItemDragStart(index) {
+      this.draggedElement = {
+        item: JSON.parse(JSON.stringify(this.gridElements[index])),
+        index,
+      };
     },
+    
+    saveDish(dishData) {
+      if (this.currentDish) {
+        const updated = this.restaurantData.dishes.map(d =>
+          d.id === this.currentDish.id ? { ...dishData, id: d.id } : d
+        );
+        this.restaurantData.dishes = updated;
+      } else {
+        const newDish = { ...dishData, id: Date.now() };
+        this.restaurantData.dishes.push(newDish);
+      }
+      this.activeForm = null;
+      this.currentDish = null;
+      localStorage.setItem('restaurant_dishes', JSON.stringify(this.restaurantData.dishes));
+      this.dishes = [...this.restaurantData.dishes];
+    },
+
+    onDrop(index) {
+      if (!this.draggedElement || !this.draggedElement.item) return;
+
+      const draggedItem = this.draggedElement.item;
+
+      this.gridElements[index] = {
+        ...draggedItem,
+        rotation: this.rotationDuringDrag,
+      };
+
+      if (typeof this.draggedElement.index === 'number') {
+        this.gridElements[this.draggedElement.index] = null;
+      }
+
+      this.draggedElement = null;
+      this.rotationDuringDrag = 0;
+    },
+
+    onDragStart(el, event) {
+      this.draggedElement = { item: el };
+      this.rotationDuringDrag = 0;
+
+      this.previewX = event.clientX;
+      this.previewY = event.clientY;
+    },
+    
+    handleGridItemClick(index) {
+      const element = this.gridElements[index];
+      if (!element) return;
+
+      if (this.interactionMode === 'rotate') {
+        this.rotateElement(index);
+      } else if (this.interactionMode === 'delete') {
+        this.removeElement(index);
+      }
+    },
+
     rotateElement(index) {
       const element = this.gridElements[index];
       if (element) {
         const newRotation = (element.rotation || 0) + 90;
-        this.$set(this.gridElements, index, {
+        this.gridElements[index] = {
           ...element,
           rotation: newRotation % 360,
-        });
+        };
       }
     },
+
     removeElement(index) {
-      this.$set(this.gridElements, index, null);
+      this.gridElements[index] = null;
     },
-    onDrop(index) {
-      if (this.draggedElement) {
-        this.gridElements[index] = { ...this.draggedElement };
-        if (this.draggedElement.fromIndex !== null) {
-          this.gridElements[this.draggedElement.fromIndex] = null;
-        }
-        this.draggedElement = null;
-      }
-    },
-    onDragStart(element, index = null) {
-      this.draggedElement = { ...element, fromIndex: index };
-    },
+
     handleCellClick(index) {
       const element = this.gridElements[index];
       if (!element) return;
 
-      if (this.mode === 'delete') {
-        this.$set(this.gridElements, index, null);
-      } else if (this.mode === 'edit') {
-        const newRotation = (element.rotation || 0) + 90;
-        this.$set(this.gridElements, index, {
-          ...element,
-          rotation: newRotation % 360
-        });
+      const newRotation = (element.rotation || 0) + 90;
+      this.gridElements[index] = {
+        ...element,
+        rotation: newRotation % 360,
+      };
+    },
+
+    handleFileChange(event) {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.restaurantData.photo = e.target.result;
+        };
+        reader.readAsDataURL(file);
       }
     },
-    handleFileChange(event) {
-    const file = event.target.files[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.previewImage = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-    },
+
     removeTag(index, type) {
-      if (type === 'cuisine') this.selectedCuisine.splice(index, 1);
-      if (type === 'tags') this.selectedTags.splice(index, 1);
+      if (type === 'cuisine') this.restaurantData.cuisine.splice(index, 1);
+      if (type === 'tags') this.restaurantData.tags.splice(index, 1);
+    },   
+    editWorker(worker) {
+      this.currentWorker = worker;
+      this.activeForm = 'workers';
+      this.showManagersList = false;
+    },
+    
+    editHours(day) {
+      console.log('Редактируем график для дня:', day);
+    },
+    handleDeleteDish(dishId) {
+      try {
+        const updatedDishes = this.restaurantData.dishes.filter(d => d.id !== dishId);
+        this.restaurantData.dishes = updatedDishes; 
+        localStorage.setItem('restaurant_dishes', JSON.stringify(updatedDishes));
+        this.dishes = updatedDishes;
+      } catch (error) {
+        console.error('Ошибка при удалении блюда:', error);
+      }
+    },
+    handleDishSubmit(dishData) {
+      if (this.currentDish) {
+        const updated = this.restaurantData.dishes.map(d =>
+          d.id === this.currentDish.id ? { ...dishData, id: d.id } : d
+        );
+        this.restaurantData.dishes = updated;
+      } else {
+        const newDish = { ...dishData, id: Date.now() };
+        this.restaurantData.dishes.push(newDish);
+      }
+      this.activeForm = null;
+      this.currentDish = null;
+    },
+    publishRestaurant() {
+      const dataToSave = JSON.stringify(this.restaurantData);
+      localStorage.setItem('restaurant_project', dataToSave);
+      alert('Ресторан збережено!');
     }
   }
 };
-
 </script>
+
 
 <style scoped>
 .restaurant-constructor {
@@ -359,7 +689,48 @@ export default {
   outline: none;
   border-color: #FF6F61;
 }
+.floor-controls {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
 
+.floor-controls button {
+  padding: 6px 12px;
+  margin: 2px;
+  border: none;
+  border-radius: 6px;
+  background-color: #eee;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.floor-controls button:hover {
+  background-color: #ccc;
+}
+
+.floor-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.floor-tabs button {
+  padding: 5px 10px;
+  background-color: #d9d9d9;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.floor-tabs button.active {
+  background-color: #4caf50;
+  color: white;
+}
 .tag.selected {
   background-color: #FF6F61;
   color: white;
@@ -499,14 +870,14 @@ export default {
 
 .restaurant-grid {
   width: 624px;
-  height: 504px;
+  height: 520px;
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  grid-template-rows: repeat(8, 1fr);
-  gap: 1px;
+  grid-template-columns: repeat(12, 0fr);
+  grid-template-rows: repeat(10, 0fr);
+  gap: 0px;
   border: 2px solid #aaa;
-  background: #e0e0e0;
-  border-radius: 8px;
+  background: none;
+  border-radius: 2px;
   position: relative;
 }
 
@@ -536,6 +907,47 @@ export default {
   align-items: center;
 }
 
+.mode-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.mode-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.3s;
+  font-weight: bold;
+}
+
+.mode-btn.green {
+  background-color: #4CAF50;
+}
+
+.mode-btn.blue {
+  background-color: #2196F3;
+}
+
+.mode-btn.red {
+  background-color: #F44336;
+}
+
+.mode-btn:not(.green):not(.blue):not(.red) {
+  background-color: #aaa;
+}
+
+.mode-btn:hover {
+  filter: brightness(1.1);
+}
+
+.mode-btn.active {
+  border: 2px solid #333;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
 .mode-toggle label {
   display: flex;
   align-items: center;
@@ -559,6 +971,28 @@ export default {
   border: 1px solid #aaa;
   border-radius: 2px;
   cursor: pointer;
+}
+
+.interaction-buttons {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: 20px;
+  vertical-align: middle;
+}
+
+.interaction-buttons button {
+  background: #eee;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.interaction-buttons button.active {
+  background: #007bff;
+  color: white;
+  border-color: #0056b3;
 }
 
 .action-buttons {
@@ -600,7 +1034,69 @@ export default {
   transition: background-color 0.2s ease;
 }
 
+.mode-buttons button.active {
+  background-color: #4caf50;
+  color: white;
+}
+
 .publish-btn:hover {
   background-color: #e55a4c;
 }
+
+.drag-preview {
+  z-index: 9999;
+  pointer-events: none;
+  transition: transform 0.1s ease-in-out;
+}
+.preview-img {
+  width: 50px;
+  height: 50px;
+  opacity: 0.8;
+}
+.data-manager-buttons {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.data-manager-btn {
+  flex: 1;
+  padding: 12px;
+  background-color: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.data-manager-btn:hover {
+  background-color: #e55a4c;
+  transform: translateY(-2px);
+}
+
+.data-manager-btn span {
+  font-size: 20px;
+}
+.fade-slide-enter-active, .fade-slide-leave-active {
+  transition: all 0.3s ease;
+}
+.fade-slide-enter-from, .fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.fade-scale-enter-active, .fade-scale-leave-active {
+  transition: all 0.25s ease;
+}
+.fade-scale-enter-from, .fade-scale-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
 </style>
