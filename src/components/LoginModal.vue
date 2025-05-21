@@ -59,8 +59,7 @@ const showPassword = ref(false)
 
 function togglePassword() {
   showPassword.value = !showPassword.value
-}
-async function handleLogin() {
+}async function handleLogin() {
   try {
     const response = await fetch('https://backend-restoran.onrender.com/api/Account/Login', {
       method: 'POST',
@@ -73,8 +72,15 @@ async function handleLogin() {
       })
     })
 
-    const data = await response.json()
-    console.log('API response:', data)
+    const contentType = response.headers.get('content-type')
+    let data = {}
+
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json()
+    } else {
+      const text = await response.text()
+      throw new Error(text || 'Помилка при вході')
+    }
 
     if (!response.ok) {
       throw new Error(data?.message || 'Невірна електронна пошта або пароль')
@@ -84,6 +90,8 @@ async function handleLogin() {
     localStorage.setItem('userId', data.userId)
     localStorage.setItem('isAuthenticated', 'true')
 
+    window.dispatchEvent(new Event('storage')) // Обновляем MainMenu
+
     emit('close')
     window.location.href = '/profile'
   } catch (error) {
@@ -91,7 +99,6 @@ async function handleLogin() {
     alert(error.message)
   }
 }
-
 
 
 function handleBackdropClick() {

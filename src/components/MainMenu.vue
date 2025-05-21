@@ -3,12 +3,18 @@
     <div class="left-side">
       <router-link to="/" class="logo-text">Сервіс для ресторанів</router-link>
       <div class="divider"></div>
-      <LocationDropdown/>
+      <LocationDropdown />
     </div>
 
-     <div class="right-buttons">
+    <div class="right-buttons">
       <button class="download-btn">Завантажити додаток</button>
-      <button class="login-btn" @click="openLogin">Увійти</button>
+
+      <template v-if="isAuthenticated">
+        <router-link to="/profile" class="login-btn">Профіль</router-link>
+        <button class="login-btn" @click="logout">Вийти</button>
+      </template>
+
+      <button class="login-btn" v-else @click="openLogin">Увійти</button>
     </div>
   </header>
 
@@ -33,7 +39,6 @@
     @close="showForgot = false"
     @back="openLogin"
   />
-
 </template>
 
 <script>
@@ -41,20 +46,22 @@ import LoginModal from './LoginModal.vue'
 import RegisterModal from './RegisterModal.vue'
 import ForgotPasswordModal from './ForgotPasswordModal.vue'
 import LocationDropdown from './LocationDropdown.vue'
+
 export default {
   name: 'MainMenu',
   components: {
     LoginModal,
     RegisterModal,
     ForgotPasswordModal,
-   LocationDropdown 
+    LocationDropdown
   },
   data() {
     return {
       showLogin: false,
       showRegister: false,
       showForgot: false,
-      transitionOnly: false
+      transitionOnly: false,
+      isAuthenticated: localStorage.getItem('isAuthenticated') === 'true'
     }
   },
   methods: {
@@ -75,7 +82,17 @@ export default {
       this.showForgot = true
       this.showLogin = false
       this.showRegister = false
+    },
+    logout() {
+      localStorage.clear()
+      this.isAuthenticated = false
+      this.$router.push('/')
     }
+  },
+  mounted() {
+    window.addEventListener('storage', () => {
+      this.isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
+    })
   }
 }
 </script>
@@ -101,6 +118,7 @@ export default {
   font-size: 20px;
   font-weight: 500;
   color: #333;
+  text-decoration: none;
 }
 
 .divider {
@@ -129,11 +147,5 @@ export default {
 .download-btn:hover,
 .login-btn:hover {
   background-color: #e25b4e;
-}
-.logo-text {
-  font-size: 20px;
-  font-weight: 500;
-  color: #333;
-  text-decoration: none;
 }
 </style>
