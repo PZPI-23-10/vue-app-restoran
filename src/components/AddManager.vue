@@ -16,8 +16,14 @@
           </div>
 
           <div class="actions">
-            <button @click="close" class="cancel">Вихід</button>
-            <button @click="submitWorker" class="submit">Додати</button>
+            <button class="cancel" @click="close">Скасувати</button>
+            <button 
+              class="submit" 
+              @click="submitForm"
+              :disabled="!isFormValid"
+            >
+              {{ isEditMode ? 'Оновити' : 'Додати модератора' }}
+            </button>
           </div>
         </div>
       </div>
@@ -26,27 +32,52 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 const props = defineProps({
   visible: Boolean,
+  workerData: {
+    type: Object,
+    default: null
+  }
 });
-const emit = defineEmits(['close', 'add-worker']);
+
+const emit = defineEmits(['close', 'submit', 'show-managers']);
 
 const worker = ref({
   email: '',
   phone: '',
 });
 
+const isEditMode = computed(() => !!props.workerData);
+const isFormValid = computed(() =>
+  worker.value.email.trim() !== '' &&
+  worker.value.phone.trim() !== ''
+);
+
 const close = () => {
   emit('close');
+  emit('show-managers');
 };
 
-const submitWorker = () => {
-  emit('add-worker', { ...worker.value });
+const submitForm = () => {
+  if (!isFormValid.value) return;
+  emit('submit', { ...worker.value });
   worker.value = { email: '', phone: '' };
   close();
 };
+
+watch(
+  () => props.workerData,
+  (newVal) => {
+    if (newVal) {
+      worker.value = { ...newVal };
+    } else {
+      worker.value = { email: '', phone: '' };
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
