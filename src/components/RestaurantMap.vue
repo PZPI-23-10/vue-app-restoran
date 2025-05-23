@@ -1,5 +1,7 @@
 <template>
-  <div id="restaurant-map"></div>
+  <div class="map-wrapper" :class="{ blurred: showLogin }">
+    <div id="restaurant-map"></div>
+  </div>
 </template>
 
 <script>
@@ -8,12 +10,20 @@ import 'leaflet/dist/leaflet.css'
 
 export default {
   name: 'RestaurantMap',
+  props: {
+    showLogin: {
+      type: Boolean,
+      default: false
+    }
+  },
   mounted() {
- const map = L.map('restaurant-map', {
-  zoomControl: false 
-}).setView([50.4501, 30.5236], 13)
+    const map = L.map('restaurant-map', {
+      zoomControl: false
+    }).setView([50.4501, 30.5236], 13)
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: ''
+    }).addTo(map)
 
     const markers = [
       { name: 'Пузата хата', lat: 50.4501, lng: 30.5256 },
@@ -54,7 +64,19 @@ export default {
   height: 400px;
 }
 
-/* Стилизация маркеров */
+.map-wrapper {
+  position: relative;
+}
+.map-wrapper.blurred::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.3);
+  z-index: 1000;
+  pointer-events: none;
+}
+
 .material-marker .material-icons {
   font-size: 30px;
   color: #f44336;

@@ -4,32 +4,26 @@
       <h2 class="title">Вхід</h2>
 
       <label class="input-label">Електронна пошта</label>
-      <input
-        type="email"
-        v-model="email"
-        class="input-field"
-        placeholder="Введіть електронну пошту"
-      />
+      <input type="email" v-model="email" class="input-field" placeholder="Введіть електронну пошту" />
 
       <label class="input-label">Пароль</label>
-        <div class="password-wrapper">
-          <input
-            :type="showPassword ? 'text' : 'password'"
-            v-model="password"
-            class="input-field"
-            placeholder="Введіть пароль"
-          />
-          <button class="toggle-password" @click="togglePassword" type="button">
-            {{ showPassword ? '🙈' : '👁' }}
-          </button>
-        </div>
+      <div class="password-wrapper">
+        <input :type="showPassword ? 'text' : 'password'" v-model="password" class="input-field" placeholder="Введіть пароль" />
+        <button class="toggle-password" @click="togglePassword" type="button">
+          {{ showPassword ? '🙈' : '👁' }}
+        </button>
+      </div>
 
-        <div class="remember-me">
-          <input type="checkbox" id="remember" v-model="rememberMe" />
-          <label for="remember">Запам'ятати мене</label>
-        </div>
+      <div class="remember-me">
+        <input type="checkbox" id="remember" v-model="rememberMe" />
+        <label for="remember">Запам'ятати мене</label>
+      </div>
 
       <button class="login-button" @click="handleLogin">Увійти</button>
+  <button class="google-button" @click="handleGoogleLogin">
+  Увійти через Google
+</button>
+
 
       <div class="links">
         <span class="link" @click="$emit('forgot')">Забули пароль?</span>
@@ -42,12 +36,9 @@
 <script setup>
 import { ref } from 'vue'
 
-defineProps({
+const props = defineProps({
   visible: Boolean,
-  transitionOnlyContent: {
-    type: Boolean,
-    default: false
-  }
+  transitionOnlyContent: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close', 'forgot', 'register'])
@@ -59,17 +50,18 @@ const showPassword = ref(false)
 
 function togglePassword() {
   showPassword.value = !showPassword.value
-}async function handleLogin() {
+}
+
+function handleBackdropClick() {
+  emit('close')
+}
+
+async function handleLogin() {
   try {
     const response = await fetch('https://backend-restoran.onrender.com/api/Account/Login', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email: email.value,
-        password: password.value
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.value, password: password.value })
     })
 
     const contentType = response.headers.get('content-type')
@@ -90,24 +82,45 @@ function togglePassword() {
     localStorage.setItem('userId', data.userId)
     localStorage.setItem('isAuthenticated', 'true')
 
-    window.dispatchEvent(new Event('storage')) // Обновляем MainMenu
-
+    window.dispatchEvent(new Event('storage'))
     emit('close')
-    window.location.href = '/profile'
   } catch (error) {
     console.error(error)
     alert(error.message)
   }
 }
 
-
-function handleBackdropClick() {
-  emit('close')
+function handleGoogleLogin() {
+  const clientId = '71975591740-1ikt0qhpb1g570oogv7pomahcr09hqf8.apps.googleusercontent.com'
+  const redirectUri = window.location.origin + '/google-auth-callback'
+  const scope = 'email profile openid'
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}`
+  window.location.href = url
 }
-
 </script>
 
 <style scoped>
+.google-button {
+  margin-top: 12px;
+  width: 100%;
+  height: 44px;
+  background-color: white;
+  color: #444;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+}
 .modal-backdrop {
   position: fixed;
   top: 0;
