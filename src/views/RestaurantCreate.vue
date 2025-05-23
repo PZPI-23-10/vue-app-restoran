@@ -2,33 +2,39 @@
   <div class="restaurant-constructor">
     <div class="first-section">
       <div class="photo-block" @click="triggerFileInput">
-        <input type="file" ref="fileInput" hidden @change="handleFileChange" />
-          <div class="photo-placeholder" v-if="!previewImage">+ Додати фото</div>
-           <img v-else :src="previewImage" class="preview-image" />
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/*"
+          @change="handleFileChange"
+          style="display: none"
+        />
+        <img v-if="restaurantData.photo" :src="restaurantData.photo" class="photo-preview" />
+        <div v-else class="photo-placeholder">+ Додати фото</div>
       </div>
 
       <div class="form-block">
-        <input class="name-input" type="text" placeholder="Назва ресторану" />
-        <textarea class="description-input" placeholder="Опис"></textarea>
+        <input class="name-input" type="text" placeholder="Назва ресторану" v-model="restaurantData.name" />
+        <textarea class="description-input" placeholder="Опис" v-model="restaurantData.description"></textarea>
 
       <div class="tags-wrapper">
         <div class="tag-select">
-            <label>Кухня</label>
-            <select @change="addTag($event, 'cuisine')">
-              <option value="">Оберіть кухню</option>
-              <option v-for="c in cuisineOptions" :key="c" :value="c">{{ c }}</option>
-            </select>
-            <div class="selected-tags">
-              <span 
-                v-for="(tag, index) in selectedCuisine" 
-                :key="tag"
-                class="tag selected"
-                @click="removeTag(index, 'cuisine')"
-              >
-                {{ tag }} ✕
-              </span>
-            </div>
+          <label>Кухня</label>
+          <select @change="addTag($event, 'cuisine')">
+            <option value="">Оберіть кухню</option>
+            <option v-for="c in cuisineOptions" :key="c" :value="c">{{ c }}</option>
+          </select>
+          <div class="selected-tags">
+            <span 
+              v-for="(tag, index) in restaurantData.cuisine" 
+              :key="tag"
+              class="tag selected"
+              @click="removeTag(index, 'cuisine')"
+            >
+              {{ tag }} ✕
+            </span>
           </div>
+        </div>
 
           <div class="tag-select">
             <label>Теги</label>
@@ -38,7 +44,7 @@
             </select>
             <div class="selected-tags">
               <span 
-                v-for="(tag, index) in selectedTags" 
+                v-for="(tag, index) in restaurantData.tags" 
                 :key="tag"
                 class="tag selected"
                 @click="removeTag(index, 'tags')"
@@ -55,7 +61,6 @@
       <button @click="openDishesList" class="view-btn">
         🍽️ Переглянути меню
       </button>
-      <button @click="openAddWorkers">Додати модератора</button>
       <button @click="openAddWorkHours">Графік роботи</button>
 
       <button @click="openManagersList" class="view-btn">
@@ -74,36 +79,50 @@
     />
     </transition>
 
-    <ManagersList 
+    <transition name="fade-slide">
+    <ManagersList
       v-if="activeForm === 'managers'"
       :visible="true"
-      @close="closeForm"
-      @edit-manager="editWorker"
+      :managers="restaurantData.managers"
+      @close="closeForm"      
+      @add="openAddManager"
+      @edit="openEditManager"
+      @delete="handleDeleteManager"
     />
+    </transition>
 
     <transition name="fade-scale">
     <AddDish
       v-if="activeForm === 'dish'"
       :visible="true"
       :dishData="currentItem"
-      @submit="handleFormSubmit"
+      @add-dish="handleAddDish"
       @update-dish="handleDishUpdate"
       @close="closeForm"
       @show-dishes="activeForm = 'dishes'"
     />
     </transition>
 
-    <AddWorkers
-      v-if="activeForm === 'workers'"
+    <transition name="fade-slide">
+    <AddManager
+      v-if="activeForm === 'manager'"
       :workerData="currentItem"
+      :visible="true"
       @submit="handleFormSubmit"
       @close="closeForm"
+      @show-managers="activeForm = 'managers'"
     />
+    </transition>
+
+    <transition name="fade-slide">
     <AddWorkHours
       v-if="activeForm === 'hours'"
+      :visible="true"
       @close="closeForm"
+      @save="handleScheduleSave"
     />
-        
+    </transition>
+
     <div class="constructor-section">
       <div class="elements-layout">
         <div class="elements-left">
@@ -199,17 +218,19 @@
     </div>
     <div class="action-buttons">
       <button class="cancel-btn">Скасувати</button>
-      <button class="publish-btn">Опублікувати</button>
+      <button class="publish-btn" @click="createRestaurant">Опублікувати (попередній перегляд)</button>
     </div>
   </div>
+  <div v-if="successMessage" class="success-notification">{{ successMessage }}</div>
+  <div v-if="errorMessage" class="error-notification">{{ errorMessage }}</div>
 </template>
 
 <script>
 import DishesList from '../components/DishesList.vue';
 import ManagersList from '../components/ManagersList.vue';
 import AddDish from '../components/AddDish.vue';
-import AddWorkers from '../components/AddWorkers.vue';
 import AddWorkHours from '../components/AddWorkHours.vue';
+import AddManager from '../components/AddManager.vue';
 
 export default {
   name: 'RestaurantCreate',
@@ -217,7 +238,7 @@ export default {
     DishesList,
     ManagersList,
     AddDish,
-    AddWorkers,
+    AddManager,
     AddWorkHours
   },
   data() {
@@ -242,6 +263,8 @@ export default {
       rotationDuringDrag: 0,
       previewImage: null,
       draggedElement: null,
+      errorMessage: '',
+      successMessage: '',
       previewX: 0,
       previewY: 0,
       activeFloorIndex: 0,
@@ -275,19 +298,47 @@ export default {
       this.activeForm = type;
       this.currentItem = item;
     },
+
     closeForm() {
       this.activeForm = null;
       this.currentItem = null;
     },
+
     openDishesList() {
       this.activeForm = 'dishes';
     },
+
     openManagersList() {
       this.activeForm = 'managers';
     },
+
+    handleDeleteManager(id) {
+      this.restaurantData.managers = this.restaurantData.managers.filter(manager => manager.id !== id);
+      localStorage.setItem('restaurant_workers', JSON.stringify(this.restaurantData.managers));  
+    },
+
+    openAddManager() {
+      this.currentItem = null;
+      this.activeForm = 'manager';
+    },
+
+    openEditManager(manager) {
+      this.currentItem = { ...manager };
+      this.activeForm = 'manager';
+    },
+
+    closeManagerForm() {
+      this.selectedManager = null;
+      this.showManagerForm = false;
+    },
+
+    handleScheduleSave(schedule) {
+      this.restaurantData.schedule = schedule;
+    },
+    
     handleFormSubmit(itemData) {
       const type = this.activeForm;
-      const key = type === 'dish' ? 'dishes' : 'workers'; 
+      const key = type === 'dish' ? 'dishes' : 'managers';
       const collection = this.restaurantData[key];
 
       if (itemData.id) {
@@ -299,7 +350,8 @@ export default {
       }
 
       localStorage.setItem(`restaurant_${key}`, JSON.stringify(collection));
-      this[key] = [...collection];
+
+      this.restaurantData[key] = [...collection];
 
       if (type === 'dish') {
         this.activeForm = 'dishes';
@@ -331,7 +383,7 @@ export default {
           this.dishes = [];
         }
       },
-        initializeData() {
+      initializeData() {
       if (!localStorage.getItem('restaurant_dishes')) {
         localStorage.setItem('restaurant_dishes', JSON.stringify([
           {
@@ -350,12 +402,12 @@ export default {
         localStorage.setItem('restaurant_workers', JSON.stringify([
           {
             id: 1,
-            name: "Іван Петренко",
+            email: "ivanPetrenko@gmail.com",
             phone: "+380991234567"
           }
         ]));
       } else {
-        this.workers = JSON.parse(localStorage.getItem('restaurant_workers'));
+        this.restaurantData.managers = JSON.parse(localStorage.getItem('restaurant_workers'));
       }
     },
 
@@ -381,9 +433,7 @@ export default {
       }
       this.closeAddDish();
     },
-    openAddWorkers() {
-      this.activeForm = 'workers';
-    },
+
     openAddWorkHours() {
       this.activeForm = 'hours';
     },
@@ -529,45 +579,74 @@ export default {
       if (type === 'cuisine') this.restaurantData.cuisine.splice(index, 1);
       if (type === 'tags') this.restaurantData.tags.splice(index, 1);
     },   
+
     editWorker(worker) {
       this.currentWorker = worker;
       this.activeForm = 'workers';
       this.showManagersList = false;
     },
-    
+
+    handleAddDish(dish) {
+      dish.id = Date.now();
+      this.restaurantData.dishes.push(dish);
+
+      localStorage.setItem('restaurant_dishes', JSON.stringify(this.restaurantData.dishes));
+
+      this.dishes = [...this.restaurantData.dishes];
+
+      this.openDishesList();
+    },
+
+
     editHours(day) {
       console.log('Редактируем график для дня:', day);
     },
+
     handleDeleteDish(dishId) {
       try {
         const updatedDishes = this.restaurantData.dishes.filter(d => d.id !== dishId);
-        this.restaurantData.dishes = updatedDishes; 
-        localStorage.setItem('restaurant_dishes', JSON.stringify(updatedDishes));
+        this.restaurantData.dishes = updatedDishes;
         this.dishes = updatedDishes;
+
+        localStorage.setItem('restaurant_dishes', JSON.stringify(updatedDishes));
+
+        this.activeForm = null;
+        this.currentItem = null;
+
+        this.$nextTick(() => {
+          this.activeForm = 'dishes';
+        });
       } catch (error) {
         console.error('Ошибка при удалении блюда:', error);
       }
     },
-    handleDishSubmit(dishData) {
-      if (this.currentDish) {
-        const updated = this.restaurantData.dishes.map(d =>
-          d.id === this.currentDish.id ? { ...dishData, id: d.id } : d
-        );
-        this.restaurantData.dishes = updated;
-      } else {
-        const newDish = { ...dishData, id: Date.now() };
-        this.restaurantData.dishes.push(newDish);
+    async createRestaurant() {
+      this.errorMessage = '';
+      this.successMessage = '';
+
+      try {
+        const response = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.restaurantData),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          this.errorMessage = data.message || `Ошибка: ${response.status}`;
+          return;
+        }
+
+        this.successMessage = 'Ресторан успешно создан!';
+      } catch (error) {
+        this.errorMessage = 'Ошибка при выполнении запроса. Попробуйте позже.';
+        console.error(error);
       }
-      this.activeForm = null;
-      this.currentDish = null;
-    },
-    publishRestaurant() {
-      const dataToSave = JSON.stringify(this.restaurantData);
-      localStorage.setItem('restaurant_project', dataToSave);
-      alert('Ресторан збережено!');
     }
   }
-};
+}
+
 </script>
 
 
@@ -602,6 +681,20 @@ export default {
   justify-content: center;
   background: #f9f9f9;
   cursor: pointer;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.photo-placeholder {
+  font-size: 16px;
+  color: #aaa;
+  text-align: center;
+}
+
+.photo-preview {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
 }
 
 .form-block {
@@ -1083,6 +1176,16 @@ export default {
 .data-manager-btn span {
   font-size: 20px;
 }
+
+.error-message {
+  padding: 10px;
+  margin: 10px 0;
+  background-color: #fdd;
+  color: #900;
+  border: 1px solid #900;
+  border-radius: 4px;
+}
+
 .fade-slide-enter-active, .fade-slide-leave-active {
   transition: all 0.3s ease;
 }

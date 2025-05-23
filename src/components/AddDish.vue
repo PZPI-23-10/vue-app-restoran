@@ -99,7 +99,7 @@
             <button 
               class="submit" 
               @click="submitForm"
-              :disabled="!isFormValid"
+              :disabled="!canSubmit"
             >
               {{ isEditMode ? 'Оновити' : 'Додати страву' }}
             </button>
@@ -123,7 +123,7 @@ export default {
       default: null
     }
   },
-  emits: ['close', 'submit', 'update-dish', 'show-dishes'],
+  emits: ['close', 'submit', 'update-dish', 'show-dishes', 'add-dish'],
   data() {
     return {
       selectedTag: '',
@@ -145,6 +145,15 @@ export default {
     };
   },
   computed: {
+    canSubmit() {
+      return (
+        this.formData.name.trim() &&
+        this.formData.weight > 0 &&
+        this.formData.price > 0 &&
+        this.formData.ingredients.trim()
+      );
+    },
+
     isFormValid() {
       return (
         this.formData.name.trim() &&
@@ -154,6 +163,7 @@ export default {
         !Object.values(this.errors).some(error => error)
       );
     },
+
     isEditMode() {
       return !!this.dishData;
     }
@@ -208,7 +218,7 @@ export default {
     },
 
     validateForm() {
-      this.errors = {};
+      Object.keys(this.errors).forEach(key => this.errors[key] = '');
       let valid = true;
 
       if (!this.formData.name.trim()) {
@@ -276,7 +286,6 @@ export default {
             price: '',
             ingredients: '',
             tags: [],
-            photo: null
           };
           this.previewImage = null;
         }

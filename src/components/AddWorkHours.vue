@@ -93,6 +93,7 @@ export default {
   emits: ["close", "save"],
   data() {
     return {
+      showToast: false,
       daysOfWeek: [
         "Понеділок",
         "Вівторок",
@@ -123,6 +124,12 @@ export default {
       }
     }
   },
+  created() {
+  const saved = localStorage.getItem('restaurant_schedule');
+  if (saved) {
+    this.savedHours = JSON.parse(saved);
+  }
+},
   methods: {
     close() {
       this.$emit("close");
@@ -147,6 +154,11 @@ export default {
       this.workHours.isDayOff = true;
       this.workHours.open = "";
       this.workHours.close = "";
+    },
+    saveAll() {
+      localStorage.setItem('restaurant_schedule', JSON.stringify(this.savedHours));
+      this.$emit("save", this.savedHours); 
+      this.$emit("close"); 
     },
     saveCurrentDay() {
       if (!this.workHours.day) return;
