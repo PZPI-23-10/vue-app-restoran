@@ -217,8 +217,19 @@
       </div>
     </div>
     <div class="action-buttons">
-      <button class="cancel-btn">Скасувати</button>
-      <button class="publish-btn" @click="createRestaurant">Опублікувати (попередній перегляд)</button>
+    <button class="cancel-btn" @click="showConfirm = true">Скасувати</button>
+
+    <ConfirmCancelModal 
+      v-if="showConfirm"
+      title="Скасувати створення ресторану?"
+      message="Всі введені дані буде втрачено. Продовжити?"
+      confirmText="Так, скасувати"
+      cancelText="Ні, залишитись"
+      @confirm="cancelCreation"
+      @close="showConfirm = false"
+    />
+  
+    <button class="publish-btn" @click="createRestaurant">Опублікувати (попередній перегляд)</button>
     </div>
   </div>
   <div v-if="successMessage" class="success-notification">{{ successMessage }}</div>
@@ -231,6 +242,8 @@ import ManagersList from '../components/ManagersList.vue';
 import AddDish from '../components/AddDish.vue';
 import AddWorkHours from '../components/AddWorkHours.vue';
 import AddManager from '../components/AddManager.vue';
+import ConfirmCancelModal from '../components/ConfirmCancelModal.vue';
+
 
 export default {
   name: 'RestaurantCreate',
@@ -239,7 +252,8 @@ export default {
     ManagersList,
     AddDish,
     AddManager,
-    AddWorkHours
+    AddWorkHours,
+    ConfirmCancelModal
   },
   data() {
     return {
@@ -251,8 +265,12 @@ export default {
         tags: [],
         layout: [Array.from({ length: 120 }, () => null)],
         dishes: [],
-        managers: []
+        managers: [],
+        address: '',        
+        owner: '',          
+        email: ''           
       },
+      showConfirm: false,
       selectedCuisine: [],
       selectedTags: [],
       activeForm: null,
@@ -284,6 +302,7 @@ export default {
       ],
     }
   },
+  
   computed: {
     gridElements() {
       return this.restaurantData.layout[this.activeFloorIndex];
@@ -292,6 +311,12 @@ export default {
   created() {
     this.loadDishes();
     this.initializeData();
+
+    const query = this.$route.query;
+
+    this.restaurantData.address = query.address || '';
+    this.restaurantData.owner = query.owner || '';
+    this.restaurantData.email = query.email || '';
   },
   methods: {
     openForm(type, item = null) {
@@ -402,8 +427,8 @@ export default {
         localStorage.setItem('restaurant_workers', JSON.stringify([
           {
             id: 1,
-            email: "ivanPetrenko@gmail.com",
-            phone: "+380991234567"
+            email: "example@gmail.com",
+            phone: "+380********"
           }
         ]));
       } else {
@@ -602,47 +627,77 @@ export default {
       console.log('Редактируем график для дня:', day);
     },
 
-    handleDeleteDish(dishId) {
-      try {
-        const updatedDishes = this.restaurantData.dishes.filter(d => d.id !== dishId);
-        this.restaurantData.dishes = updatedDishes;
-        this.dishes = updatedDishes;
+      handleDeleteDish(dishId) {
+        try {
+          const updatedDishes = this.restaurantData.dishes.filter(d => d.id !== dishId);
+          this.restaurantData.dishes = updatedDishes;
+          this.dishes = updatedDishes;
 
-        localStorage.setItem('restaurant_dishes', JSON.stringify(updatedDishes));
+          localStorage.setItem('restaurant_dishes', JSON.stringify(updatedDishes));
 
-        this.activeForm = null;
-        this.currentItem = null;
+          this.activeForm = null;
+          this.currentItem = null;
 
-        this.$nextTick(() => {
-          this.activeForm = 'dishes';
-        });
-      } catch (error) {
-        console.error('Ошибка при удалении блюда:', error);
-      }
-    },
-    async createRestaurant() {
+          this.$nextTick(() => {
+            this.activeForm = 'dishes';
+          });
+        } catch (error) {
+          console.error('Ошибка при удалении блюда:', error);
+        }
+      },
+      async createRestaurant() {
       this.errorMessage = '';
       this.successMessage = '';
 
       try {
         const response = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Create', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${token}'
+          },
           body: JSON.stringify(this.restaurantData),
         });
 
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json(); 
+        } catch (e) {
+          throw new Error(response.statusText || 'Помилка запиту');
+        }
 
         if (!response.ok) {
-          this.errorMessage = data.message || `Ошибка: ${response.status}`;
+          this.errorMessage = data.message || `Помилка: ${response.status}`;
           return;
         }
 
-        this.successMessage = 'Ресторан успешно создан!';
+        this.successMessage = 'Ресторан успішно створено!';
       } catch (error) {
-        this.errorMessage = 'Ошибка при выполнении запроса. Попробуйте позже.';
+        this.errorMessage = error.message || 'Помилка при виконанні запиту. Спробуйте пізніше.';
         console.error(error);
       }
+    },
+
+      cancelCreation() {
+      localStorage.removeItem('restaurant_dishes');
+      localStorage.removeItem('restaurant_workers');
+
+      // Очищаем restaurantData
+      this.restaurantData = {
+        name: '',
+        description: '',
+        photo: null,
+        cuisine: [],
+        tags: [],
+        layout: [Array.from({ length: 120 }, () => null)],
+        dishes: [],
+        managers: [],
+        address: '',
+        owner: '',
+        email: ''
+      };
+
+      this.$router.back();
     }
   }
 }

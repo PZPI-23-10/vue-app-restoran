@@ -9,12 +9,25 @@
       <p><strong>Місто:</strong> Київ</p>
       <!-- Тут можна додати редагування, зміну паролю, замовлення, тощо -->
     </div>
+
+        <button class="create-btn" @click="showModal = true">Створити ресторан</button>
+        <RestaurantInitModal v-if="showModal" @close="showModal = false" />
   </div>
 </template>
 
 <script>
+import RestaurantInitModal from '../components/RestaurantInitModal.vue';
+
 export default {
-  name: 'ProfilePage'
+    name: 'ProfilePage',
+    components: {
+      RestaurantInitModal
+    },
+    data() {
+    return {
+      showModal: false
+    };
+  }
 }
 </script>
 
@@ -29,5 +42,19 @@ export default {
   padding: 20px;
   border-radius: 10px;
   max-width: 400px;
+}
+
+.create-btn {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background-color: #0088cc;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.create-btn:hover {
+  background-color: #006fa1;
 }
 </style>
