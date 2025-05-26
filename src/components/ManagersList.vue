@@ -15,7 +15,6 @@
           <div v-for="manager in managers" :key="manager.id" class="manager-item">
             <div class="manager-info">
               <p><strong>Email:</strong> {{ manager.email }}</p>
-              <p><strong>Телефон:</strong> {{ manager.phone }}</p>
             </div>
             <div class="manager-actions">
               <button @click="$emit('edit', manager)" class="edit-btn">Редагувати</button>
@@ -166,7 +165,7 @@ export default {
 }
 
 .add-btn {
-  background: #4a90e2;
+  background: #e2874a;
   color: white;
   padding: 10px 24px;
   border: none;
@@ -178,7 +177,7 @@ export default {
 }
 
 .add-btn:hover {
-  background: #357acc;
+  background: #d47739;
 }
 
 .empty-message {

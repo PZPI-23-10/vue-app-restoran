@@ -1,5 +1,5 @@
 <template>
-<transition name="modal-scale">  
+  <transition name="modal-scale">  
     <div class="modal-overlay" v-if="visible" @click.self="close">
       <div class="modal-window">
         <div class="add-worker-form">
@@ -7,12 +7,7 @@
 
           <div class="input-field">
             <label>Пошта</label>
-            <input v-model="worker.email" type="text" required />
-          </div>
-
-          <div class="input-field">
-            <label>Телефон</label>
-            <input v-model="worker.phone" type="tel" required />
+            <input v-model="worker.email" type="email" required />
           </div>
 
           <div class="actions">
@@ -46,13 +41,12 @@ const emit = defineEmits(['close', 'submit', 'show-managers']);
 
 const worker = ref({
   email: '',
-  phone: '',
 });
 
 const isEditMode = computed(() => !!props.workerData);
+
 const isFormValid = computed(() =>
-  worker.value.email.trim() !== '' &&
-  worker.value.phone.trim() !== ''
+  worker.value.email.trim() !== '' 
 );
 
 const close = () => {
@@ -62,18 +56,21 @@ const close = () => {
 
 const submitForm = () => {
   if (!isFormValid.value) return;
-  emit('submit', { ...worker.value });
-  worker.value = { email: '', phone: '' };
+
+  const trimmedEmail = worker.value.email.trim();
+
+  emit('submit', { email: trimmedEmail });
+  worker.value = { email: '' };
   close();
 };
 
 watch(
   () => props.workerData,
   (newVal) => {
-    if (newVal) {
-      worker.value = { ...newVal };
+    if (newVal && newVal.email) {
+      worker.value = { email: newVal.email.trim() };
     } else {
-      worker.value = { email: '', phone: '' };
+      worker.value = { email: '' };
     }
   },
   { immediate: true }
@@ -166,7 +163,7 @@ input {
 }
 
 input:focus {
-  border-color: #4a90e2;
+  border-color: #e24a4a;
   box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
   outline: none;
 }

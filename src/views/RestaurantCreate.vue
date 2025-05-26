@@ -9,7 +9,7 @@
           @change="handleFileChange"
           style="display: none"
         />
-        <img v-if="restaurantData.photo" :src="restaurantData.photo" class="photo-preview" />
+        <img v-if="restaurantData.photoUrl" :src="restaurantData.photoUrl" class="photo-preview" />
         <div v-else class="photo-placeholder">+ Додати фото</div>
       </div>
 
@@ -219,6 +219,7 @@
     <div class="action-buttons">
     <button class="cancel-btn" @click="showConfirm = true">Скасувати</button>
 
+    <transition name="fade-slide">
     <ConfirmCancelModal 
       v-if="showConfirm"
       title="Скасувати створення ресторану?"
@@ -228,12 +229,11 @@
       @confirm="cancelCreation"
       @close="showConfirm = false"
     />
+    </transition>
   
     <button class="publish-btn" @click="createRestaurant">Опублікувати (попередній перегляд)</button>
     </div>
   </div>
-  <div v-if="successMessage" class="success-notification">{{ successMessage }}</div>
-  <div v-if="errorMessage" class="error-notification">{{ errorMessage }}</div>
 </template>
 
 <script>
@@ -260,15 +260,18 @@ export default {
       restaurantData: {
         name: '',
         description: '',
-        photo: null,
+        photoUrl: null,
         cuisine: [],
         tags: [],
         layout: [Array.from({ length: 120 }, () => null)],
         dishes: [],
-        managers: [],
-        address: '',        
-        owner: '',          
-        email: ''           
+        moderatorEmails: [],
+        street: '',
+        city: '',        
+        region: '',        
+        email: '',
+        organization: '',
+        schedule: []           
       },
       showConfirm: false,
       selectedCuisine: [],
@@ -281,8 +284,6 @@ export default {
       rotationDuringDrag: 0,
       previewImage: null,
       draggedElement: null,
-      errorMessage: '',
-      successMessage: '',
       previewX: 0,
       previewY: 0,
       activeFloorIndex: 0,
@@ -361,29 +362,29 @@ export default {
       this.restaurantData.schedule = schedule;
     },
     
-    handleFormSubmit(itemData) {
-      const type = this.activeForm;
-      const key = type === 'dish' ? 'dishes' : 'managers';
-      const collection = this.restaurantData[key];
-
-      if (itemData.id) {
-        const index = collection.findIndex(i => i.id === itemData.id);
-        if (index !== -1) collection.splice(index, 1, itemData);
-      } else {
-        itemData.id = Date.now();
-        collection.push(itemData);
+    handleFormSubmit(manager) {
+      if (!manager || !manager.email) {
+        console.warn('Не передана почта менеджера');
+        return;
       }
 
-      localStorage.setItem(`restaurant_${key}`, JSON.stringify(collection));
+      const email = manager.email.trim();
+      if (!email) return;
 
-      this.restaurantData[key] = [...collection];
+      const collection = this.restaurantData.managers || [];
 
-      if (type === 'dish') {
-        this.activeForm = 'dishes';
-        this.currentItem = null;
+      const index = collection.findIndex(m => m.email === email);
+
+      if (index !== -1) {
+        collection.splice(index, 1, { email });
       } else {
-        this.closeForm();
+        collection.push({ email });
       }
+
+      localStorage.setItem('restaurant_managers', JSON.stringify(collection));
+      this.restaurantData.managers = [...collection];
+
+      this.closeForm();
     },
 
     handleDishUpdate(updatedDish) {
@@ -426,9 +427,7 @@ export default {
       if (!localStorage.getItem('restaurant_workers')) {
         localStorage.setItem('restaurant_workers', JSON.stringify([
           {
-            id: 1,
             email: "example@gmail.com",
-            phone: "+380********"
           }
         ]));
       } else {
@@ -594,7 +593,7 @@ export default {
       if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (e) => {
-          this.restaurantData.photo = e.target.result;
+          this.restaurantData.photoUrl = e.target.result;
         };
         reader.readAsDataURL(file);
       }
@@ -622,11 +621,6 @@ export default {
       this.openDishesList();
     },
 
-
-    editHours(day) {
-      console.log('Редактируем график для дня:', day);
-    },
-
       handleDeleteDish(dishId) {
         try {
           const updatedDishes = this.restaurantData.dishes.filter(d => d.id !== dishId);
@@ -645,38 +639,103 @@ export default {
           console.error('Ошибка при удалении блюда:', error);
         }
       },
-      async createRestaurant() {
-      this.errorMessage = '';
-      this.successMessage = '';
+          
+convertLayout(layoutByFloors) {
+  if (!Array.isArray(layoutByFloors)) return [];
 
-      try {
-        const response = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Create', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${token}'
-          },
-          body: JSON.stringify(this.restaurantData),
-        });
+  const GRID_WIDTH = 12; 
+  const ITEMS_PER_FLOOR = 120;
 
-        let data;
-        try {
-          data = await response.json(); 
-        } catch (e) {
-          throw new Error(response.statusText || 'Помилка запиту');
-        }
+  return layoutByFloors.map((floorItems, floorIndex) => {
+    if (!Array.isArray(floorItems)) return [];
 
-        if (!response.ok) {
-          this.errorMessage = data.message || `Помилка: ${response.status}`;
-          return;
-        }
+    let tableIdCounter = 1; 
+    const floorNumber = floorIndex + 1;
 
-        this.successMessage = 'Ресторан успішно створено!';
-      } catch (error) {
-        this.errorMessage = error.message || 'Помилка при виконанні запиту. Спробуйте пізніше.';
-        console.error(error);
-      }
-    },
+    return floorItems.reduce((result, item, itemIndex) => {
+      if (!item || typeof item !== 'object') return result;
+
+      const typeId = item.id || item.typeId || 0;
+      if (typeId === 0) return result; 
+
+      const x = itemIndex % GRID_WIDTH;
+      const y = Math.floor(itemIndex / GRID_WIDTH);
+
+      const isTable = typeId >= 6 && typeId <= 9;
+      const id = isTable ? tableIdCounter++ : 0;
+
+      result.push({
+        x,
+        y,
+        typeId,
+        id,
+        rotation: item.rotation || 0,
+        floor: floorNumber
+      });
+
+      return result;
+    }, []);
+  })
+},
+
+  async createRestaurant() {
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+
+    if (!token || !userId) {
+      console.error('❌ Токен або userId відсутні. Користувач не авторизований.');
+      this.errorMessage = 'Ви не авторизовані. Будь ласка, увійдіть у систему.';
+      return;
+    }
+
+    if (this.restaurantData.address) {
+      const parts = this.restaurantData.address.split(',').map(p => p.trim());
+      this.restaurantData.region = parts[0] || '';
+      this.restaurantData.city = parts[1] || '';
+      this.restaurantData.street = parts.slice(2).join(', ') || '';
+      delete this.restaurantData.address;
+    }
+
+    if (Array.isArray(this.restaurantData.managers)) {
+      this.restaurantData.moderatorEmails = this.restaurantData.managers.map(m => m.email);
+      delete this.restaurantData.managers;
+    }
+
+    this.restaurantData.owner = userId;
+
+    if (Array.isArray(this.restaurantData.dishes)) {
+      this.restaurantData.dishes.forEach(dish => {
+        if (dish.photo) delete dish.photo;
+      });
+    }
+
+    console.log('Original layout:', JSON.parse(JSON.stringify(this.restaurantData.layout)));
+    if (Array.isArray(this.restaurantData.layout)) {
+      this.restaurantData.layout = this.convertLayout(this.restaurantData.layout);
+    }
+    console.log('Converted layout:', JSON.parse(JSON.stringify(this.restaurantData.layout)));
+
+    try {
+      console.log('Отправляемые данные:', this.restaurantData);
+
+      const response = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Create', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(this.restaurantData),
+      });
+
+      if (!response.ok) throw new Error('Помилка при створенні ресторану');
+      this.successMessage = 'Ресторан успішно створено!';
+    } catch (error) {
+      this.errorMessage = error.message || 'Сталася помилка';
+    }
+  },
 
       cancelCreation() {
       localStorage.removeItem('restaurant_dishes');
@@ -686,15 +745,18 @@ export default {
       this.restaurantData = {
         name: '',
         description: '',
-        photo: null,
+        photoUrl: null,
         cuisine: [],
         tags: [],
         layout: [Array.from({ length: 120 }, () => null)],
         dishes: [],
-        managers: [],
-        address: '',
-        owner: '',
-        email: ''
+        moderatorEmails: [],
+        street: '',
+        city: '',        
+        region: '',        
+        email: '',
+        organization: '',
+        schedule: []    
       };
 
       this.$router.back();

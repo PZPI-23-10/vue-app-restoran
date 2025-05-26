@@ -11,7 +11,7 @@
     </div>
 
         <button class="create-btn" @click="showModal = true">Створити ресторан</button>
-        <RestaurantInitModal v-if="showModal" @close="showModal = false" />
+        <RestaurantInitModal :visible="showModal" @close="showModal = false" />
   </div>
 </template>
 
