@@ -21,13 +21,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
-defineProps({
-  visible: Boolean
+const props = defineProps({
+  visible: Boolean,
+  transitionOnlyContent: Boolean
 })
 
 const emit = defineEmits(['close', 'back'])
+
+const internalVisible = ref(false)
 
 const email = ref('')
 
@@ -48,6 +51,8 @@ function handleBackdropClick() {
   width: 100vw;
   height: 100vh;
   background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;

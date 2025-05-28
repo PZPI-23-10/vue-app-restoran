@@ -32,7 +32,16 @@ const routes = [
   {
     path: '/create-restaurant',
     name: 'RestaurantCreate',
-    component: RestaurantCreate 
+    component: RestaurantCreate,
+    beforeEnter: (to, from, next) => {
+      const isLoggedIn = localStorage.getItem('isAuthenticated') === 'true'
+      if (isLoggedIn) {
+        next()
+      } else {
+        alert('Щоб створити ресторан, увійдіть у свій акаунт.')
+        next('/') // или открыть модальное окно
+      }
+    }
   },
   {
     path: '/restaurant/:id',

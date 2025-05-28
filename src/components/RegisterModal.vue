@@ -17,8 +17,11 @@
       <label class="input-label">По-батькові</label>
       <input type="text" v-model="middleName" class="input-field" placeholder="Введіть по-батькові" />
 
-      <label class="input-label">Адреса</label>
-      <input type="text" v-model="address" class="input-field" placeholder="Обл., н.п., вул., буд." />
+      <label class="input-label">Місто</label>
+      <input type="text" v-model="city" class="input-field" placeholder="Введіть місто" />
+
+      <label class="input-label">Вулиця</label>
+      <input type="text" v-model="street" class="input-field" placeholder="Введіть вулицю" />
 
       <label class="input-label">Електронна пошта</label>
       <input type="email" v-model="email" class="input-field" placeholder="Введіть електронну пошту" />
@@ -58,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import TermsModal from './TermsModal.vue'
 
 defineProps({
@@ -74,7 +77,8 @@ const emit = defineEmits(['close', 'hasAccount'])
 const firstName = ref('')
 const lastName = ref('')
 const middleName = ref('')
-const address = ref('')
+const city = ref('')
+const street = ref('')
 const email = ref('')
 const password = ref('')
 const agreeTerms = ref(false)
@@ -109,7 +113,8 @@ async function handleRegister() {
         middleName: middleName.value,
         email: email.value,
         password: password.value,
-        address: address.value
+        city: city.value,
+        street: street.value
       })
     })
 

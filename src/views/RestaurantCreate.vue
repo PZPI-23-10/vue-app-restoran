@@ -299,7 +299,7 @@ export default {
         { id: 7, title: 'Місце на багатьох', image: '/images/tableForMany.png' },
         { id: 8, title: 'Столи з диваном/кріслом', image: '/images/tableWithSofa.png' },
         { id: 9, title: 'Барна стійка', image: '/images/bar.png' },
-        { id: 11, title: 'Сходи', image: '/images/stairs.png' }
+        { id: 10, title: 'Сходи', image: '/images/stairs.png' }
       ],
     }
   },
@@ -640,43 +640,45 @@ export default {
         }
       },
           
-convertLayout(layoutByFloors) {
-  if (!Array.isArray(layoutByFloors)) return [];
+  convertLayout(layoutByFloors) {
+    if (!Array.isArray(layoutByFloors)) return [];
 
-  const GRID_WIDTH = 12; 
-  const ITEMS_PER_FLOOR = 120;
+    const GRID_WIDTH = 12;
+    const ITEMS_PER_FLOOR = 120;
 
-  return layoutByFloors.map((floorItems, floorIndex) => {
-    if (!Array.isArray(floorItems)) return [];
+    const result = layoutByFloors.map((floorItems, floorIndex) => {
+      if (!Array.isArray(floorItems)) return [];
 
-    let tableIdCounter = 1; 
-    const floorNumber = floorIndex + 1;
+      let tableIdCounter = 1;
+      const floorNumber = floorIndex + 1;
 
-    return floorItems.reduce((result, item, itemIndex) => {
-      if (!item || typeof item !== 'object') return result;
+      return floorItems.reduce((acc, item, itemIndex) => {
+        if (!item || typeof item !== 'object') return acc;
 
-      const typeId = item.id || item.typeId || 0;
-      if (typeId === 0) return result; 
+        const typeId = item.id || item.typeId || 0;
+        if (typeId === 0) return acc;
 
-      const x = itemIndex % GRID_WIDTH;
-      const y = Math.floor(itemIndex / GRID_WIDTH);
+        const x = itemIndex % GRID_WIDTH;
+        const y = Math.floor(itemIndex / GRID_WIDTH);
 
-      const isTable = typeId >= 6 && typeId <= 9;
-      const id = isTable ? tableIdCounter++ : 0;
+        const isTable = typeId >= 6 && typeId <= 9;
+        const id = isTable ? tableIdCounter++ : 0;
 
-      result.push({
-        x,
-        y,
-        typeId,
-        id,
-        rotation: item.rotation || 0,
-        floor: floorNumber
-      });
+        acc.push({
+          x,
+          y,
+          typeId,
+          id,
+          rotation: item.rotation || 0,
+          floor: floorNumber
+        });
 
-      return result;
-    }, []);
-  })
-},
+        return acc;
+      }, []);
+    });
+
+    return result.flat(); 
+  },
 
   async createRestaurant() {
     this.errorMessage = '';
@@ -685,12 +687,7 @@ convertLayout(layoutByFloors) {
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
 
-    if (!token || !userId) {
-      console.error('❌ Токен або userId відсутні. Користувач не авторизований.');
-      this.errorMessage = 'Ви не авторизовані. Будь ласка, увійдіть у систему.';
-      return;
-    }
-
+    // ✅ Разделение адреса на части
     if (this.restaurantData.address) {
       const parts = this.restaurantData.address.split(',').map(p => p.trim());
       this.restaurantData.region = parts[0] || '';
@@ -699,27 +696,49 @@ convertLayout(layoutByFloors) {
       delete this.restaurantData.address;
     }
 
+    // ✅ Менеджеры → moderatorEmails
     if (Array.isArray(this.restaurantData.managers)) {
       this.restaurantData.moderatorEmails = this.restaurantData.managers.map(m => m.email);
       delete this.restaurantData.managers;
     }
 
+    // ✅ Владелец
     this.restaurantData.owner = userId;
 
+    // ✅ Приведение блюд в правильный формат
     if (Array.isArray(this.restaurantData.dishes)) {
-      this.restaurantData.dishes.forEach(dish => {
-        if (dish.photo) delete dish.photo;
+      this.restaurantData.dishes = this.restaurantData.dishes.map(dish => {
+        const { id, photo, image, ...rest } = dish;
+        return {
+          ...rest,
+          photoUrl: image || '', // ← обязательно строка
+          tags: dish.tags || [], // ← пустой массив, если нет
+          name: dish.name || '',
+          ingredients: dish.ingredients || '',
+          price: Number(dish.price) || 0,
+          weight: Number(dish.weight) || 0
+        };
       });
     }
 
-    console.log('Original layout:', JSON.parse(JSON.stringify(this.restaurantData.layout)));
+    
+// ✅ Layout — корректное преобразование с учётом этажей и координат
     if (Array.isArray(this.restaurantData.layout)) {
       this.restaurantData.layout = this.convertLayout(this.restaurantData.layout);
     }
-    console.log('Converted layout:', JSON.parse(JSON.stringify(this.restaurantData.layout)));
+
+    // ✅ Schedule — добавляем open/close даже в выходные
+    if (Array.isArray(this.restaurantData.schedule)) {
+      this.restaurantData.schedule = this.restaurantData.schedule.map(day => ({
+        day: day.day || '',
+        isDayOff: !!day.isClosed || !!day.isDayOff,
+        open: day.isClosed || day.isDayOff ? '' : (day.open || ''),
+        close: day.isClosed || day.isDayOff ? '' : (day.close || '')
+      }));
+    }
 
     try {
-      console.log('Отправляемые данные:', this.restaurantData);
+      console.log('Отправляемые данные:', JSON.parse(JSON.stringify(this.restaurantData)));
 
       const response = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Create', {
         method: 'POST',
@@ -730,7 +749,11 @@ convertLayout(layoutByFloors) {
         body: JSON.stringify(this.restaurantData),
       });
 
-      if (!response.ok) throw new Error('Помилка при створенні ресторану');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Помилка при створенні ресторану: ${errorText}`);
+      }
+
       this.successMessage = 'Ресторан успішно створено!';
     } catch (error) {
       this.errorMessage = error.message || 'Сталася помилка';
@@ -740,8 +763,7 @@ convertLayout(layoutByFloors) {
       cancelCreation() {
       localStorage.removeItem('restaurant_dishes');
       localStorage.removeItem('restaurant_workers');
-
-      // Очищаем restaurantData
+ 
       this.restaurantData = {
         name: '',
         description: '',

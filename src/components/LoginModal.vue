@@ -1,59 +1,83 @@
 <template>
-  <div class="modal-backdrop" v-if="visible" @click="handleBackdropClick" :class="{ 'no-backdrop-animation': transitionOnlyContent }">
-    <div class="modal-content" @click.stop>
-      <h2 class="title">Вхід</h2>
+  <transition name="fade-backdrop" appear>
+    <div
+      v-if="internalVisible"
+      class="modal-backdrop modal-backdrop-active"
+      @click="handleBackdropClick"
+    >
+      <transition name="scale-content" appear>
+        <div
+          v-if="internalVisible"
+          class="modal-content modal-content-active"
+          @click.stop
+        >
+          <h2 class="title">Вхід</h2>
 
-      <label class="input-label">Електронна пошта</label>
-      <input type="email" v-model="email" class="input-field" placeholder="Введіть електронну пошту" />
+          <label class="input-label">Електронна пошта</label>
+          <input
+            type="email"
+            v-model="email"
+            class="input-field"
+            placeholder="Введіть електронну пошту"
+          />
 
-      <label class="input-label">Пароль</label>
-      <div class="password-wrapper">
-        <input :type="showPassword ? 'text' : 'password'" v-model="password" class="input-field" placeholder="Введіть пароль" />
-        <button class="toggle-password" @click="togglePassword" type="button">
-          {{ showPassword ? '🙈' : '👁' }}
-        </button>
-      </div>
+          <label class="input-label">Пароль</label>
+          <div class="password-wrapper">
+            <input
+              :type="showPassword ? 'text' : 'password'"
+              v-model="password"
+              class="input-field"
+              placeholder="Введіть пароль"
+            />
+            <button class="toggle-password" @click="togglePassword" type="button">
+              {{ showPassword ? '🙈' : '👁' }}
+            </button>
+          </div>
 
-      <div class="remember-me">
-        <input type="checkbox" id="remember" v-model="rememberMe" />
-        <label for="remember">Запам'ятати мене</label>
-      </div>
+          <div class="remember-me">
+            <input type="checkbox" id="remember" v-model="rememberMe" />
+            <label for="remember">Запам'ятати мене</label>
+          </div>
 
-      <button class="login-button" @click="handleLogin">Увійти</button>
-  <button class="google-button" @click="handleGoogleLogin">
-  Увійти через Google
-</button>
+          <button class="login-button" @click="handleLogin">Увійти</button>
+          <button class="google-button" @click="handleGoogleLogin">
+            Увійти через Google
+          </button>
 
-
-      <div class="links">
-        <span class="link" @click="$emit('forgot')">Забули пароль?</span>
-        <span class="link" @click="$emit('register')">Створити обліковий запис</span>
-      </div>
+          <div class="links">
+            <span class="link" @click="$emit('forgot')">Забули пароль?</span>
+            <span class="link" @click="$emit('register')">Створити обліковий запис</span>
+          </div>
+        </div>
+      </transition>
     </div>
-  </div>
+  </transition>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps({
   visible: Boolean,
-  transitionOnlyContent: { type: Boolean, default: false }
+  backdropVisible: Boolean
 })
 
-const emit = defineEmits(['close', 'forgot', 'register'])
 
+const emit = defineEmits(['close', 'forgot', 'register', 'update:backdropVisible'])
+
+const internalVisible = ref(false)
 const rememberMe = ref(false)
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
 
+watch(() => props.visible, (val) => {
+  internalVisible.value = val
+  emit('update:backdropVisible', val)
+})
+
 function togglePassword() {
   showPassword.value = !showPassword.value
-}
-
-function handleBackdropClick() {
-  emit('close')
 }
 
 async function handleLogin() {
@@ -78,12 +102,18 @@ async function handleLogin() {
       throw new Error(data?.message || 'Невірна електронна пошта або пароль')
     }
 
+    // Сохраняем авторизационные данные
     localStorage.setItem('token', data.accessToken)
     localStorage.setItem('userId', data.userId)
     localStorage.setItem('isAuthenticated', 'true')
 
     window.dispatchEvent(new Event('storage'))
-    emit('close')
+
+  internalVisible.value = false;
+  setTimeout(() => {
+    emit('close');
+  }, 300);
+
   } catch (error) {
     console.error(error)
     alert(error.message)
@@ -96,6 +126,13 @@ function handleGoogleLogin() {
   const scope = 'email profile openid'
   const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}`
   window.location.href = url
+}
+
+function handleBackdropClick() {
+  internalVisible.value = false
+  setTimeout(() => {
+    emit('close')
+  }, 300)
 }
 </script>
 
@@ -123,52 +160,71 @@ function handleGoogleLogin() {
 }
 .modal-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999;
-  animation: fadeInBackdrop 0.4s ease-out;
-  padding: 16px; 
-  box-sizing: border-box; 
+  padding: 16px;
+  box-sizing: border-box;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
 }
 
-@keyframes fadeInBackdrop {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
+.modal-backdrop-active {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .modal-content {
-  background: #fff;
+  background: white;
   padding: 24px;
   border-radius: 12px;
   width: 100%;
   max-width: 360px;
-  max-height: 100%; 
-  overflow-y: auto;  
+  max-height: 100%;
+  overflow-y: auto;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-  animation: fadeInContent 0.5s ease-out;
   box-sizing: border-box;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-@keyframes fadeInContent {
-  0% {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+.modal-content-active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.fade-backdrop-enter-active,
+.fade-backdrop-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-backdrop-enter-from,
+.fade-backdrop-leave-to {
+  opacity: 0;
+}
+.fade-backdrop-enter-to,
+.fade-backdrop-leave-from {
+  opacity: 1;
+}
+
+.scale-content-enter-active,
+.scale-content-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.scale-content-enter-from,
+.scale-content-leave-to {
+  opacity: 0;
+  transform: scale(0.9);
+}
+.scale-content-enter-to,
+.scale-content-leave-from {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .password-wrapper {
