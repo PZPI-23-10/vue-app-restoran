@@ -36,6 +36,9 @@ body,
   height: 100%;
   margin: 0;
   display: flex;
+    background-color: #f9f9f9;
   flex-direction: column;
 }
+
+
 </style>

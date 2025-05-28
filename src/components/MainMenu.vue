@@ -1,5 +1,5 @@
 <template>
-  <header class="main-header" @click.self="closeMenu">
+  <header class="main-header">
     <div class="left-side">
       <router-link to="/" class="logo-text">Сервіс для ресторанів</router-link>
       <div class="divider"></div>
@@ -19,7 +19,9 @@
         </button>
 
         <div v-if="menuOpen" class="dropdown-menu" @click.stop>
-          <router-link to="/profile" class="dropdown-item">Профіль</router-link>
+          <router-link to="/profile/info" class="dropdown-item">Профіль</router-link>
+
+
           <button @click="logout" class="dropdown-item">Вийти</button>
         </div>
       </div>
@@ -59,9 +61,11 @@ export default {
   },
   mounted() {
     window.addEventListener('storage', this.syncAuth)
+    document.addEventListener('click', this.handleOutsideClick)
   },
   beforeUnmount() {
     window.removeEventListener('storage', this.syncAuth)
+    document.removeEventListener('click', this.handleOutsideClick)
   },
   methods: {
     openLogin() {
@@ -88,12 +92,22 @@ export default {
     toggleMenu() {
       this.menuOpen = !this.menuOpen
     },
-    closeMenu() {
-      this.menuOpen = false
-    },
     syncAuth() {
       this.isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
       this.userEmail = localStorage.getItem('email') || 'Акаунт'
+    },
+    handleOutsideClick(event) {
+      const menu = this.$el.querySelector('.dropdown-menu')
+      const button = this.$el.querySelector('.profile-btn')
+
+      if (
+        this.menuOpen &&
+        menu &&
+        !menu.contains(event.target) &&
+        !button.contains(event.target)
+      ) {
+        this.menuOpen = false
+      }
     }
   }
 }

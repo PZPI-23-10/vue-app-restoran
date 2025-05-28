@@ -55,7 +55,6 @@ function togglePassword() {
 function handleBackdropClick() {
   emit('close')
 }
-
 async function handleLogin() {
   try {
     const response = await fetch('https://backend-restoran.onrender.com/api/Account/Login', {
@@ -75,8 +74,11 @@ async function handleLogin() {
     }
 
     if (!response.ok) {
+      console.error('Сервер повернув помилку:', data)
       throw new Error(data?.message || 'Невірна електронна пошта або пароль')
     }
+
+    console.log('Успішний вхід:', data)
 
     localStorage.setItem('token', data.accessToken)
     localStorage.setItem('userId', data.userId)
@@ -85,10 +87,11 @@ async function handleLogin() {
     window.dispatchEvent(new Event('storage'))
     emit('close')
   } catch (error) {
-    console.error(error)
+    console.error('Помилка входу:', error)
     alert(error.message)
   }
 }
+
 
 function handleGoogleLogin() {
   const clientId = '71975591740-1ikt0qhpb1g570oogv7pomahcr09hqf8.apps.googleusercontent.com'

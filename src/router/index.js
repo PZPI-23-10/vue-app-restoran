@@ -6,24 +6,33 @@ import RestaurantPage from '../views/RestaurantPage.vue'
 import ProfilePage from '../views/ProfilePage.vue'
 import GoogleAuthCallback from '../components/GoogleAuthCallback.vue'
 
+// вкладені сторінки профілю:
+import ProfileUser from '../components/ProfileUser.vue'
+import FavoriteDishes from '../components/FavoriteDishes.vue'
+import Reservations from '../components/Reservations.vue'
+
 const routes = [
   {
     path: '/profile',
-    name: 'ProfilePage',
     component: ProfilePage,
     beforeEnter: (to, from, next) => {
       const isLoggedIn = localStorage.getItem('isAuthenticated') === 'true'
-      if (isLoggedIn) {
-        next()
-      } else {
+      if (isLoggedIn) next()
+      else {
         alert('Будь ласка, увійдіть в акаунт')
-        next('/') // или открыть модальное окно
+        next('/')
       }
-    }
+    },
+    children: [
+      { path: '', redirect: 'info' },
+      { path: 'info', component: ProfileUser },
+      { path: 'favorites', component: FavoriteDishes },
+      { path: 'reservations', component: Reservations }
+    ]
   },
 
   { path: '/', component: Home },
- {
+  {
     path: '/restaurants/:city?',
     name: 'RestaurantPageList',
     component: RestaurantPageList,
@@ -40,10 +49,10 @@ const routes = [
     component: RestaurantPage,
     props: true
   },
-   {
+  {
     path: '/google-auth-callback',
     component: GoogleAuthCallback
-  },
+  }
 ]
 
 const router = createRouter({
