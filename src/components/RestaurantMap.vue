@@ -17,7 +17,6 @@ const cityCoords = {
   'Одеса': [46.4825, 30.7233],
   'Ізмаїл': [45.3519, 28.8370]
 }
-
 export default {
   name: 'RestaurantMap',
   props: {
@@ -32,7 +31,9 @@ export default {
   },
   data() {
     return {
-      map: null
+      map: null,
+      markers: [],
+      minZoomToShowMarkers: 13
     }
   },
   mounted() {
@@ -40,52 +41,83 @@ export default {
 
     this.map = L.map('restaurant-map', {
       zoomControl: false
-    }).setView(initialCoords, 13)
+    }).setView(initialCoords, 13) // Початковий зум менший, ніж пороговий
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: ''
     }).addTo(this.map)
 
-    const markers = [
-      { name: 'Пузата хата', lat: 50.4501, lng: 30.5256 },
-      { name: 'Італійська хата', lat: 50.4503, lng: 30.5280 },
-      { name: 'Мексиканський кортель', lat: 50.4555, lng: 30.5250 }
-    ]
+    this.createMarkers()
 
-    markers.forEach(({ name, lat, lng }) => {
-      const icon = L.divIcon({
-        className: 'material-marker',
-        html: `<span class="material-icons">location_on</span>`,
-        iconSize: [30, 30],
-        iconAnchor: [15, 30]
+    this.map.on('zoomend', this.toggleMarkersVisibility)
+    this.toggleMarkersVisibility() // Перевірити одразу
+  },
+  methods: {
+    createMarkers() {
+      const markerData = [
+        { name: 'Пузата хата', lat: 50.4501, lng: 30.5256 },
+        { name: 'Італійська хата', lat: 50.4503, lng: 30.5280 },
+        { name: 'Мексиканський кортель', lat: 50.4555, lng: 30.5250 }
+      ]
+
+      this.markers = markerData.map(({ name, lat, lng }) => {
+        const icon = L.divIcon({
+          className: 'material-marker',
+          html: `<span class="material-icons">location_on</span>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 30]
+        })
+
+        const marker = L.marker([lat, lng], { icon }).bindPopup(name)
+
+        marker.on('add', () => {
+          setTimeout(() => {
+            const el = marker.getElement()
+            if (el) {
+              el.addEventListener('mouseenter', () => {
+                const span = el.querySelector('.material-icons')
+                span?.classList.add('hovered')
+              })
+              el.addEventListener('mouseleave', () => {
+                const span = el.querySelector('.material-icons')
+                span?.classList.remove('hovered')
+              })
+            }
+          }, 0)
+        })
+
+        return marker
       })
+    },
+    toggleMarkersVisibility() {
+      const currentZoom = this.map.getZoom()
 
-      const marker = L.marker([lat, lng], { icon }).addTo(this.map).bindPopup(name)
+      this.markers.forEach(marker => {
+        const isOnMap = this.map.hasLayer(marker)
 
-      setTimeout(() => {
-        const el = marker.getElement()
-        if (el) {
-          el.addEventListener('mouseenter', () => {
-            const span = el.querySelector('.material-icons')
-            span?.classList.add('hovered')
-          })
-          el.addEventListener('mouseleave', () => {
-            const span = el.querySelector('.material-icons')
-            span?.classList.remove('hovered')
-          })
+        if (currentZoom >= this.minZoomToShowMarkers) {
+          if (!isOnMap) {
+            marker.addTo(this.map)
+          }
+        } else {
+          if (isOnMap) {
+            this.map.removeLayer(marker)
+          }
         }
-      }, 0)
-    })
+      })
+    }
   },
   watch: {
     selectedCity(newCity) {
       const coords = cityCoords[newCity]
       if (coords && this.map) {
-        this.map.setView(coords, 13)
+        this.map.setView(coords, 12)
+        this.toggleMarkersVisibility()
       }
     }
   }
 }
+
 </script>
 
 <style scoped>

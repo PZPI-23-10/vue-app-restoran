@@ -6,7 +6,8 @@
 
       <div class="restaurant-page-container">
         <div class="restaurant-list">
-          <RestaurantList />
+          <RestaurantList :selectedCity="selectedCity" />
+
         </div>
 
         <div class="restaurant-map">
@@ -45,41 +46,37 @@ export default {
 
 
 <style scoped>
-/* Общие стили для контента ресторана */
+
 .restaurant-page-content {
   display: flex;
   flex-direction: column;
-  gap: 10px; /* Отступ между фильтрами и остальным контентом */
+  gap: 10px;
 }
 
-/* Фильтры */
 .filter-buttons {
-  width: 100%;  /* Фильтр займет всю ширину */
+  width: 100%;
   display: flex;
   gap: 12px;
-  justify-content: center; /* Выравнивание по центру */
-  margin-bottom: 20px; /* Отступ снизу */
+  justify-content: center;
+  margin-bottom: 20px;
 }
 
-/* Контейнер для списка ресторанов и карты */
 .restaurant-page-container {
   display: flex;
-  gap: 20px; /* Отступ между списком ресторанов и картой */
+  gap: 20px;
   justify-content: space-between;
-  flex-wrap: wrap; /* Для адаптивности на мобильных устройствах */
+  flex-wrap: wrap;
 }
 
-/* Стили для списка ресторанов */
 .restaurant-list {
-  flex: 1; /* Растягиваем на доступное пространство */
-  min-width: 300px; /* Минимальная ширина */
-  background-color: #f9f9f9; /* Фоновый цвет */
+  flex: 1;
+  min-width: 300px;
+  background-color: #f9f9f9;
   padding: 20px;
-  border-radius: 8px; /* Закругленные углы */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Тень */
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Разделитель между списком ресторанов и картой */
 .separator {
   width: 1px;
   background-color: black; /* Цвет разделителя */

@@ -1,60 +1,92 @@
 <template>
   <div class="restaurant-list">
+    <!-- Выводим список ресторанов -->
     <div
       v-for="restaurant in filteredRestaurants"
       :key="restaurant.id"
       class="restaurant-card"
     >
-    <h3 class="clickable" @click="goToRestaurant(restaurant.id)">
-  {{ restaurant.name }}
-    </h3>
+      <!-- Название ресторана -->
+      <h3 v-if="restaurant.name" class="clickable" @click="goToRestaurant(restaurant.id)">
+        {{ restaurant.name }}
+      </h3>
 
+      <!-- Фото ресторана -->
+      <img
+        v-if="restaurant.photoUrl"
+        :src="restaurant.photoUrl"
+        alt="Фото ресторану"
+        class="restaurant-image"
+      />
 
-
+      <!-- Город и регион -->
       <div class="ratings">
-        <span>{{ restaurant.rating }} ★</span>
+        {{ restaurant.city }} — {{ restaurant.region }}
       </div>
+
+      <!-- Улица и email -->
       <div class="details">
-        <span>{{ restaurant.type }}</span>
-        <span>{{ restaurant.address }}</span>
+        <span>{{ restaurant.street }}</span>
+        <span>{{ restaurant.email }}</span>
       </div>
     </div>
+
+    <!-- Отладочная информация -->
+    <pre>{{ filteredRestaurants }}</pre>
   </div>
 </template>
 
-<script>import { useRouter } from 'vue-router'
+<script>
+import { fetchRestaurants } from '../services/api'
+import { useRouter } from 'vue-router'
 
 export default {
   name: 'RestaurantList',
+  props: {
+    selectedCity: {
+      type: String,
+      required: true
+    }
+  },
   setup() {
     const router = useRouter()
-
-    function goToRestaurant(id) {
+    const goToRestaurant = (id) => {
       router.push({ name: 'RestaurantPage', params: { id } })
     }
-
     return { goToRestaurant }
   },
   data() {
     return {
-      restaurants: [
-        { id: 1, name: 'Пузата хата', rating: 4.3, type: 'Традиційна їжа', address: 'Київ вул. Вокзальна 42' },
-        { id: 2, name: 'Італійська хата', rating: 4.1, type: 'Італійська', address: 'Київ вул. Контрактова' },
-        { id: 3, name: 'Мексиканський кортель', rating: 3.9, type: 'Мексиканська', address: 'Київ вул. Вокзальна 50' }
-      ],
+      restaurants: [],
       selectedCategory: null
     }
   },
   computed: {
     filteredRestaurants() {
-      if (this.selectedCategory) {
-        return this.restaurants.filter(restaurant => restaurant.type === this.selectedCategory)
+      // Фильтрация по місту (обов’язково перевірка на наявність даних)
+      return this.restaurants.filter(r => r.city && r.city === this.selectedCity)
+    }
+  },
+  watch: {
+    selectedCity: {
+      immediate: true,
+      handler() {
+        this.loadRestaurants()
       }
-      return this.restaurants
+    }
+  },
+  methods: {
+    async loadRestaurants() {
+      try {
+        const response = await fetchRestaurants()
+        console.log('Отримано з API:', response.data) // 👈 лог на перевірку
+        this.restaurants = response.data
+      } catch (error) {
+        console.error('Помилка при завантаженні ресторанів:', error)
+      }
     }
   }
 }
-
 </script>
 
 <style scoped>
@@ -71,14 +103,23 @@ export default {
   border-radius: 8px;
 }
 
+.restaurant-image {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
 .ratings {
-  color: #FFD700;
+  font-weight: bold;
 }
 
 .details {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   font-size: 14px;
+  margin-top: 5px;
 }
 
 .clickable {
