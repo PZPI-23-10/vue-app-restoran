@@ -1,7 +1,6 @@
 <template>
   <div class="profile-layout">
     <div class="profile-header">
-      <div class="avatar">{{ userInitials }}</div>
       <div class="user-info">
         <h2>Привіт, {{ userName }}</h2>
       </div>
@@ -35,13 +34,7 @@ export default {
       dateCreated: ''
     }
   },
-  computed: {
-    userInitials() {
-      return this.userName
-        ? this.userName.split(' ').map(p => p[0]).join('').toUpperCase()
-        : 'U'
-    }
-  },
+
  async mounted() {
   this.isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
   const userId = localStorage.getItem('userId')
