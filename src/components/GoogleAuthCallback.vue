@@ -1,4 +1,3 @@
-<!-- src/components/GoogleAuthCallback.vue -->
 <template>
   <div class="auth-loading">
     Авторизація через Google...
@@ -11,12 +10,11 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-onMounted(() => {
+onMounted(async () => {
   const hash = window.location.hash
-  const params = new URLSearchParams(hash.slice(1)) // remove the '#' character
+  const params = new URLSearchParams(hash.slice(1))
 
   const accessToken = params.get('access_token')
-  const idToken = params.get('id_token')
   const error = params.get('error')
 
   if (error) {
@@ -26,11 +24,32 @@ onMounted(() => {
   }
 
   if (accessToken) {
-    localStorage.setItem('token', accessToken)
-    localStorage.setItem('isAuthenticated', 'true')
+    try {
+      const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
 
-    window.dispatchEvent(new Event('storage'))
-    router.push('/')
+      const user = await response.json()
+
+      if (user?.email) {
+        localStorage.setItem('token', accessToken)
+        localStorage.setItem('isAuthenticated', 'true')
+        localStorage.setItem('email', user.email)
+
+        // Сповіщаємо інші компоненти про зміни
+        window.dispatchEvent(new Event('storage'))
+        router.push('/')
+      } else {
+        alert('Не вдалося отримати email користувача.')
+        router.push('/')
+      }
+    } catch (e) {
+      console.error(e)
+      alert('Сталася помилка при зверненні до Google API.')
+      router.push('/')
+    }
   } else {
     alert('Не вдалося отримати токен доступу.')
     router.push('/')

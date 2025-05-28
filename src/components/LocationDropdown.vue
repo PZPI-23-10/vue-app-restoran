@@ -24,7 +24,7 @@
             v-for="city in locations[selectedRegion]"
             :key="city"
             class="item"
-            @click="goToRestaurantPage(city)" 
+            @click="goToRestaurantPage(city)"
           >
             {{ city }}
           </div>
@@ -43,6 +43,7 @@ const selectedRegion = ref('Запорізька')
 
 const dropdownRef = ref(null)
 const router = useRouter()
+const emit = defineEmits(['citySelected'])
 
 const locations = {
   Запорізька: ['Київ', 'Харків'],
@@ -50,7 +51,6 @@ const locations = {
   Одеська: ['Одеса', 'Ізмаїл']
 }
 
-// Открытие/закрытие дропдауна
 function toggle() {
   open.value = !open.value
 }
@@ -59,14 +59,12 @@ function selectRegion(region) {
   selectedRegion.value = region
 }
 
-// Переход на страницу ресторана
 function goToRestaurantPage(city) {
+  emit('citySelected', city)
   router.push({ name: 'RestaurantPageList', params: { city } })
   open.value = false
 }
 
-
-// Закрытие дропдауна при клике вне компонента
 function handleClickOutside(event) {
   if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
     open.value = false
@@ -142,17 +140,11 @@ onUnmounted(() => {
 .item {
   padding: 6px;
   cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
-.marker-wrapper {
-  display: flex;
-  align-items: center;
-}
-
-.material-icons {
-  font-size: 20px;
-  cursor: pointer;
-  line-height: 1;
+.item:hover {
+  background-color: #f0f0f0;
 }
 
 .selected {

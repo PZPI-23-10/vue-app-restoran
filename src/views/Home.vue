@@ -46,6 +46,7 @@
 import { ref } from 'vue'
 import DatePicker from '../components/DatePicker.vue'
 import DropdownSelect from '../components/DropdownSelect.vue'
+const isOpen = ref(false)
 
 const time = ref('19:00')
 const timeOptions = [
@@ -104,8 +105,8 @@ const peopleOptions = [
   display: flex;
   border: 1px solid #333;
   border-radius: 8px;
-  overflow: visible; 
-  position: relative; 
+  overflow: visible;
+  position: relative;
 }
 
 .filter-group > * {

@@ -1,44 +1,36 @@
 <template>
-  <header class="main-header">
+  <header class="main-header" @click.self="closeMenu">
     <div class="left-side">
       <router-link to="/" class="logo-text">Сервіс для ресторанів</router-link>
       <div class="divider"></div>
-      <LocationDropdown />
+      <LocationDropdown @citySelected="$emit('citySelected', $event)" />
     </div>
 
     <div class="right-buttons">
       <button class="download-btn">Завантажити додаток</button>
 
-      <template v-if="isAuthenticated">
-        <router-link to="/profile" class="login-btn">Профіль</router-link>
-        <button class="login-btn" @click="logout">Вийти</button>
-      </template>
+      <div class="profile-wrapper" v-if="isAuthenticated">
+        <button class="profile-btn" @click.stop="toggleMenu">
+          <svg class="profile-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="4" fill="currentColor" />
+            <path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="currentColor" />
+          </svg>
+          <span class="profile-email">{{ userEmail }}</span>
+        </button>
+
+        <div v-if="menuOpen" class="dropdown-menu" @click.stop>
+          <router-link to="/profile" class="dropdown-item">Профіль</router-link>
+          <button @click="logout" class="dropdown-item">Вийти</button>
+        </div>
+      </div>
 
       <button class="login-btn" v-else @click="openLogin">Увійти</button>
     </div>
+
+    <LoginModal :visible="showLogin" @close="showLogin = false" @register="openRegister" @forgot="openForgot" />
+    <RegisterModal :visible="showRegister" @close="showRegister = false" />
+    <ForgotPasswordModal :visible="showForgot" @close="showForgot = false" />
   </header>
-
-  <LoginModal
-    :visible="showLogin"
-    :transitionOnlyContent="transitionOnly"
-    @close="showLogin = false"
-    @register="openRegister"
-    @forgot="openForgot"
-  />
-
-  <RegisterModal
-    :visible="showRegister"
-    :transitionOnlyContent="transitionOnly"
-    @close="showRegister = false"
-    @hasAccount="openLogin"
-  />
-
-  <ForgotPasswordModal
-    :visible="showForgot"
-    :transitionOnlyContent="transitionOnly"
-    @close="showForgot = false"
-    @back="openLogin"
-  />
 </template>
 
 <script>
@@ -60,39 +52,49 @@ export default {
       showLogin: false,
       showRegister: false,
       showForgot: false,
-      transitionOnly: false,
-      isAuthenticated: localStorage.getItem('isAuthenticated') === 'true'
+      isAuthenticated: localStorage.getItem('isAuthenticated') === 'true',
+      userEmail: localStorage.getItem('email') || 'Акаунт',
+      menuOpen: false
     }
+  },
+  mounted() {
+    window.addEventListener('storage', this.syncAuth)
+  },
+  beforeUnmount() {
+    window.removeEventListener('storage', this.syncAuth)
   },
   methods: {
     openLogin() {
-      this.transitionOnly = this.showRegister || this.showForgot
       this.showLogin = true
       this.showRegister = false
       this.showForgot = false
     },
     openRegister() {
-      this.transitionOnly = this.showLogin
       this.showRegister = true
       this.showLogin = false
       this.showForgot = false
     },
     openForgot() {
-      this.transitionOnly = true
       this.showForgot = true
       this.showLogin = false
       this.showRegister = false
     },
     logout() {
       localStorage.clear()
-      this.isAuthenticated = false
+      this.syncAuth()
+      this.menuOpen = false
       this.$router.push('/')
-    }
-  },
-  mounted() {
-    window.addEventListener('storage', () => {
+    },
+    toggleMenu() {
+      this.menuOpen = !this.menuOpen
+    },
+    closeMenu() {
+      this.menuOpen = false
+    },
+    syncAuth() {
       this.isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
-    })
+      this.userEmail = localStorage.getItem('email') || 'Акаунт'
+    }
   }
 }
 </script>
@@ -129,23 +131,89 @@ export default {
 
 .right-buttons {
   display: flex;
+  align-items: center;
   gap: 12px;
 }
 
 .download-btn,
-.login-btn {
+.login-btn,
+.profile-btn {
   padding: 6px 14px;
   border-radius: 8px;
   border: none;
-  background-color: #FF6F61;
-  color: white;
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
+.download-btn,
+.login-btn {
+  background-color: #ff6f61;
+  color: white;
+}
+
+.profile-btn {
+  background-color: #f9f9f9;
+  color: black;
+}
+
+.profile-btn:hover,
 .download-btn:hover,
 .login-btn:hover {
   background-color: #e25b4e;
+}
+
+.profile-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.profile-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.profile-email {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 8px;
+  min-width: 140px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 10px 14px;
+  color: #333;
+  text-align: left;
+  text-decoration: none;
+  font-size: 14px;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover,
+.active-dropdown {
+  background-color: #f0f0f0;
 }
 </style>

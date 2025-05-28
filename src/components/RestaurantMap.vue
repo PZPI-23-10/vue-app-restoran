@@ -8,22 +8,43 @@
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
+// 🔹 Винесено за межі export, щоб мати доступ і в mounted, і в watch
+const cityCoords = {
+  'Київ': [50.4501, 30.5236],
+  'Харків': [49.9935, 36.2304],
+  'Львів': [49.8397, 24.0297],
+  'Дрогобич': [49.3500, 23.5000],
+  'Одеса': [46.4825, 30.7233],
+  'Ізмаїл': [45.3519, 28.8370]
+}
+
 export default {
   name: 'RestaurantMap',
   props: {
     showLogin: {
       type: Boolean,
       default: false
+    },
+    selectedCity: {
+      type: String,
+      default: ''
+    }
+  },
+  data() {
+    return {
+      map: null
     }
   },
   mounted() {
-    const map = L.map('restaurant-map', {
+    const initialCoords = cityCoords[this.selectedCity] || [50.4501, 30.5236]
+
+    this.map = L.map('restaurant-map', {
       zoomControl: false
-    }).setView([50.4501, 30.5236], 13)
+    }).setView(initialCoords, 13)
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: ''
-    }).addTo(map)
+    }).addTo(this.map)
 
     const markers = [
       { name: 'Пузата хата', lat: 50.4501, lng: 30.5256 },
@@ -39,7 +60,7 @@ export default {
         iconAnchor: [15, 30]
       })
 
-      const marker = L.marker([lat, lng], { icon }).addTo(map).bindPopup(name)
+      const marker = L.marker([lat, lng], { icon }).addTo(this.map).bindPopup(name)
 
       setTimeout(() => {
         const el = marker.getElement()
@@ -55,6 +76,14 @@ export default {
         }
       }, 0)
     })
+  },
+  watch: {
+    selectedCity(newCity) {
+      const coords = cityCoords[newCity]
+      if (coords && this.map) {
+        this.map.setView(coords, 13)
+      }
+    }
   }
 }
 </script>
@@ -67,6 +96,7 @@ export default {
 .map-wrapper {
   position: relative;
 }
+
 .map-wrapper.blurred::after {
   content: '';
   position: absolute;

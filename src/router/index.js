@@ -23,16 +23,16 @@ const routes = [
   },
 
   { path: '/', component: Home },
-  {
-    path: '/restaurants/:city', 
+ {
+    path: '/restaurants/:city?',
     name: 'RestaurantPageList',
     component: RestaurantPageList,
-    props: true  
+    props: true
   },
   {
     path: '/create-restaurant',
     name: 'RestaurantCreate',
-    component: RestaurantCreate 
+    component: RestaurantCreate
   },
   {
     path: '/restaurant/:id',

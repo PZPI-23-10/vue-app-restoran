@@ -1,34 +1,27 @@
 <template>
-    <MainMenu/>
-  <router-view />
-      <Footer />
+  <MainMenu @citySelected="selectedCity = $event" />
+  <router-view :selectedCity="selectedCity" />
+  <Footer />
 </template>
 
 <script>
-import { createRouter, createWebHistory } from 'vue-router'
-import Home from './views/Home.vue'
-import RestaurantPageList from './views/RestaurantPageList.vue'
-import MainMenu from './components/MainMenu.vue' 
+import MainMenu from './components/MainMenu.vue'
 import Footer from './components/Footer.vue'
-const routes = [
-  { path: '/', component: Home },
-  { path: '/restaurants', component: RestaurantPageList }
-]
-
-
-const router = createRouter({
-  history: createWebHistory(),
-  routes
-})
 
 export default {
   name: 'App',
   components: {
-    MainMenu , Footer
+    MainMenu,
+    Footer
   },
-  router
+  data() {
+    return {
+      selectedCity: 'Київ'
+    }
+  }
 }
 </script>
+
 <style>
 body {
   margin: 0;

@@ -1,16 +1,19 @@
 <template>
   <div>
+
     <div class="restaurant-page-content">
-      <FilterButtons /> <!-- Фильтры под шапкой -->
-      
+      <FilterButtons />
+
       <div class="restaurant-page-container">
-        <!-- Левая часть с списком ресторанов -->
         <div class="restaurant-list">
           <RestaurantList />
         </div>
-        <!-- Правая часть с картой -->
+
         <div class="restaurant-map">
-          <RestaurantMap />
+        <RestaurantMap :selectedCity="selectedCity" />
+
+
+
         </div>
       </div>
     </div>
@@ -18,21 +21,28 @@
 </template>
 
 <script>
-import MainMenu from '../components/MainMenu.vue' 
+import MainMenu from '../components/MainMenu.vue'
 import FilterButtons from '../components/FilterButtons.vue'
 import RestaurantList from '../components/RestaurantList.vue'
 import RestaurantMap from '../components/RestaurantMap.vue'
-
 export default {
-  name: 'RestaurantPage',  
+  name: 'RestaurantPage',
+  props: {
+    selectedCity: {
+      type: String,
+      default: 'Київ'
+    }
+  },
   components: {
-    MainMenu,  
-    FilterButtons, 
-    RestaurantList,  
-    RestaurantMap    
+    MainMenu,
+    FilterButtons,
+    RestaurantList,
+    RestaurantMap
   }
 }
+
 </script>
+
 
 <style scoped>
 /* Общие стили для контента ресторана */

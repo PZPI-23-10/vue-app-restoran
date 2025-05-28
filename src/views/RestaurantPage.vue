@@ -14,7 +14,7 @@ const restaurantData = [
     id: 1,
     name: 'Пузата Хата',
     rating: 4,
-    image: 'https://img.hotels24.ua/photos/r3/570x400/7382/138485.jpg', // или локально
+    image: 'https://img.hotels24.ua/photos/r3/570x400/7382/138485.jpg',
     description: '«Пузата Хата» — це місце, де українська кухня оживає в кожній страві...',
     type: 'Українська',
     tags: ['Домашня', 'традиційна їжа', 'швидко', 'для всіх']

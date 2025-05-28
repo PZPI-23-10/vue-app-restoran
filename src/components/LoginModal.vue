@@ -81,7 +81,7 @@ async function handleLogin() {
     localStorage.setItem('token', data.accessToken)
     localStorage.setItem('userId', data.userId)
     localStorage.setItem('isAuthenticated', 'true')
-
+    localStorage.setItem('email', email.value)
     window.dispatchEvent(new Event('storage'))
     emit('close')
   } catch (error) {
@@ -134,8 +134,8 @@ function handleGoogleLogin() {
   justify-content: center;
   z-index: 999;
   animation: fadeInBackdrop 0.4s ease-out;
-  padding: 16px; 
-  box-sizing: border-box; 
+  padding: 16px;
+  box-sizing: border-box;
 }
 
 @keyframes fadeInBackdrop {
@@ -153,8 +153,8 @@ function handleGoogleLogin() {
   border-radius: 12px;
   width: 100%;
   max-width: 360px;
-  max-height: 100%; 
-  overflow-y: auto;  
+  max-height: 100%;
+  overflow-y: auto;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   animation: fadeInContent 0.5s ease-out;
   box-sizing: border-box;
