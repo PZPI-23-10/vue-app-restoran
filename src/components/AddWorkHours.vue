@@ -158,7 +158,7 @@ export default {
     saveAll() {
       localStorage.setItem('restaurant_schedule', JSON.stringify(this.savedHours));
       this.$emit("save", this.savedHours); 
-      this.$emit("close"); 
+      this.showToastMessage();
     },
     saveCurrentDay() {
       if (!this.workHours.day) return;
@@ -175,6 +175,8 @@ export default {
       const index = this.savedHours.findIndex(e => e.day === entry.day);
       if (index !== -1) this.savedHours.splice(index, 1, entry);
       else this.savedHours.push(entry);
+
+      localStorage.setItem('restaurant_schedule', JSON.stringify(this.savedHours));
 
       this.showToastMessage();
     },
