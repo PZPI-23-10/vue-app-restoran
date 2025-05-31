@@ -1,56 +1,66 @@
 <template>
-  <div>
+  <div class="restaurant-page-content">
+    <FilterButtons />
 
-    <div class="restaurant-page-content">
-      <FilterButtons />
+    <div class="restaurant-page-container">
+      <div class="restaurant-list">
+        <RestaurantList :restaurants="visibleRestaurants" />
+      </div>
 
-      <div class="restaurant-page-container">
-        <div class="restaurant-list">
-          <RestaurantList :selectedCity="selectedCity" />
-
-        </div>
-
-        <div class="restaurant-map">
-        <RestaurantMap :selectedCity="selectedCity" />
-
-
-
-        </div>
+      <div class="restaurant-map">
+        <RestaurantMap
+          :selectedCity="currentCity"
+          @restaurantsVisible="handleVisibleRestaurants"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import MainMenu from '../components/MainMenu.vue'
 import FilterButtons from '../components/FilterButtons.vue'
 import RestaurantList from '../components/RestaurantList.vue'
 import RestaurantMap from '../components/RestaurantMap.vue'
+
 export default {
-  name: 'RestaurantPage',
+  name: 'RestaurantPageList',
   props: {
-    selectedCity: {
+    city: {
       type: String,
       default: 'Київ'
     }
   },
   components: {
-    MainMenu,
     FilterButtons,
     RestaurantList,
     RestaurantMap
+  },
+  data() {
+    return {
+      visibleRestaurants: []
+    }
+  },
+  computed: {
+    currentCity() {
+      return this.city || 'Київ'
+    }
+  },
+  methods: {
+    handleVisibleRestaurants(restaurants) {
+      this.visibleRestaurants = restaurants
+    }
   }
 }
-
 </script>
 
 
 <style scoped>
-
 .restaurant-page-content {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  height: calc(100vh - 100px);
+  overflow: hidden;
 }
 
 .filter-buttons {
@@ -65,49 +75,37 @@ export default {
   display: flex;
   gap: 20px;
   justify-content: space-between;
-  flex-wrap: wrap;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
 }
 
 .restaurant-list {
   flex: 1;
-  min-width: 300px;
   background-color: #f9f9f9;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  max-height: calc(100% - 40px);
 }
 
-.separator {
-  width: 1px;
-  background-color: black; /* Цвет разделителя */
-  height: auto;
-  min-height: 300px; /* Минимальная высота разделителя */
-  margin: auto; /* Выравнивание по центру */
-}
-
-/* Стили для карты */
 .restaurant-map {
-  flex: 1.5; /* Растягиваем карту на большее пространство */
-  min-width: 400px; /* Минимальная ширина карты */
-  background-color: #e0e0e0; /* Фоновый цвет */
+  flex: 1.5;
+  min-width: 400px;
+  background-color: #e0e0e0;
   padding: 20px;
-  border-radius: 8px; /* Закругленные углы */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Тень */
+  border-radius: 8px;
+  height: 100%;
 }
 
-/* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
   .restaurant-page-container {
-    flex-direction: column; /* Список и карта будут располагаться друг под другом на мобильных устройствах */
+    flex-direction: column;
   }
 
   .restaurant-list,
   .restaurant-map {
-    min-width: 100%; /* Ширина 100% на мобильных */
-  }
-
-  .separator {
-    display: none;
+    min-width: 100%;
   }
 }
 </style>

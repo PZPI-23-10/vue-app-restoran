@@ -1,4 +1,4 @@
-<!-- src/components/FavoriteDishes.vue -->
+
 <template>
   <div>
     <h3>Улюблені страви</h3>

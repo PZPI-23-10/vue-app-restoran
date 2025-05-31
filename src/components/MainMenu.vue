@@ -3,7 +3,8 @@
     <div class="left-side">
       <router-link to="/" class="logo-text">Сервіс для ресторанів</router-link>
       <div class="divider"></div>
-      <LocationDropdown @citySelected="$emit('citySelected', $event)" />
+    <LocationDropdown @citySelected="handleCitySelected" />
+
     </div>
 
     <div class="right-buttons">
@@ -96,6 +97,10 @@ export default {
       this.isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
       this.userEmail = localStorage.getItem('email') || 'Акаунт'
     },
+    handleCitySelected(city) {
+    this.$emit('citySelected', city)
+    this.$router.push({ name: 'RestaurantPageList', params: { city } })
+  },
     handleOutsideClick(event) {
       const menu = this.$el.querySelector('.dropdown-menu')
       const button = this.$el.querySelector('.profile-btn')

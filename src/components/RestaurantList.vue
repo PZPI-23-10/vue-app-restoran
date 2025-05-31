@@ -1,90 +1,56 @@
 <template>
   <div class="restaurant-list">
-    <!-- Выводим список ресторанов -->
-    <div
-      v-for="restaurant in filteredRestaurants"
-      :key="restaurant.id"
-      class="restaurant-card"
-    >
-      <!-- Название ресторана -->
-      <h3 v-if="restaurant.name" class="clickable" @click="goToRestaurant(restaurant.id)">
-        {{ restaurant.name }}
-      </h3>
-
-      <!-- Фото ресторана -->
-      <img
-        v-if="restaurant.photoUrl"
-        :src="restaurant.photoUrl"
-        alt="Фото ресторану"
-        class="restaurant-image"
-      />
-
-      <!-- Город и регион -->
-      <div class="ratings">
-        {{ restaurant.city }} — {{ restaurant.region }}
-      </div>
-
-      <!-- Улица и email -->
-      <div class="details">
-        <span>{{ restaurant.street }}</span>
-        <span>{{ restaurant.email }}</span>
-      </div>
+    <!-- Прелоадер -->
+    <div v-if="!restaurants || restaurants.length === 0" class="loading">
+      Немає ресторанів у межах видимості карти...
     </div>
 
-    <!-- Отладочная информация -->
-    <pre>{{ filteredRestaurants }}</pre>
+    <!-- Список ресторанів -->
+    <div
+      v-else
+      v-for="restaurant in restaurants"
+      :key="restaurant.id"
+      class="restaurant-card"
+      @click="goToRestaurant(restaurant.id)"
+    >
+      <div class="header-row">
+        <h3 class="restaurant-name">{{ restaurant.name }}</h3>
+        <div class="address">{{ restaurant.city }} вул.{{ restaurant.street }}</div>
+      </div>
+
+      <div class="rating-row">
+        <span class="stars">★★★★☆</span>
+        <span class="rating-text">Добре</span>
+        <span class="review-count">(4032)</span>
+      </div>
+
+      <div class="tags">
+        <span class="tag">Домашня</span>
+        <span class="tag">Традиційна їжа</span>
+        <span class="tag">Швидко</span>
+      </div>
+    </div>
   </div>
 </template>
 
-<script>
-import { fetchRestaurants } from '../services/api'
+<script setup>
+import { defineProps } from 'vue'
 import { useRouter } from 'vue-router'
 
-export default {
-  name: 'RestaurantList',
-  props: {
-    selectedCity: {
-      type: String,
-      required: true
-    }
-  },
-  setup() {
-    const router = useRouter()
-    const goToRestaurant = (id) => {
-      router.push({ name: 'RestaurantPage', params: { id } })
-    }
-    return { goToRestaurant }
-  },
-  data() {
-    return {
-      restaurants: [],
-      selectedCategory: null
-    }
-  },
-  computed: {
-    filteredRestaurants() {
-      // Фильтрация по місту (обов’язково перевірка на наявність даних)
-      return this.restaurants.filter(r => r.city && r.city === this.selectedCity)
-    }
-  },
-  watch: {
-    selectedCity: {
-      immediate: true,
-      handler() {
-        this.loadRestaurants()
-      }
-    }
-  },
-  methods: {
-    async loadRestaurants() {
-      try {
-        const response = await fetchRestaurants()
-        console.log('Отримано з API:', response.data) // 👈 лог на перевірку
-        this.restaurants = response.data
-      } catch (error) {
-        console.error('Помилка при завантаженні ресторанів:', error)
-      }
-    }
+const props = defineProps({
+  restaurants: {
+    type: Array,
+    required: true
+  }
+})
+
+const router = useRouter()
+
+function goToRestaurant(id) {
+  if (id) {
+    router.push(`/restaurant/${id}`)
+  } else {
+    alert('У цього ресторану немає ID!')
   }
 }
 </script>
@@ -93,41 +59,83 @@ export default {
 .restaurant-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
+  height: 100%;
 }
 
 .restaurant-card {
-  background: #fff;
-  border: 1px solid #ddd;
-  padding: 10px;
-  border-radius: 8px;
+  border: 1px solid #ccc;
+  padding: 14px;
+  border-radius: 12px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: box-shadow 0.3s ease;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.restaurant-image {
-  width: 100%;
-  max-height: 200px;
-  object-fit: cover;
-  border-radius: 6px;
-  margin-bottom: 10px;
+.restaurant-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.ratings {
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.restaurant-name {
+  font-size: 20px;
   font-weight: bold;
 }
 
-.details {
-  display: flex;
-  flex-direction: column;
+.address {
   font-size: 14px;
-  margin-top: 5px;
+  color: #333;
+  white-space: nowrap;
 }
 
-.clickable {
-  cursor: pointer;
-  color: #2c3e50;
-  transition: color 0.2s;
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
 }
-.clickable:hover {
-  color: #42b983;
+
+.stars {
+  color: gold;
+  font-size: 18px;
+}
+
+.rating-text {
+  font-weight: 500;
+}
+
+.review-count {
+  color: #666;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  padding: 2px 10px;
+  border: 1px solid #d33;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #d33;
+}
+
+.loading {
+  padding: 20px;
+  font-size: 18px;
+  text-align: center;
+  color: #888;
 }
 </style>

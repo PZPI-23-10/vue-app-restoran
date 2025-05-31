@@ -9,10 +9,8 @@
         <span class="material-icons arrow" :class="{ rotated: dropdownOpen }">expand_more</span>
         </button>
 
-      <!-- Разделитель между "Обрані" и остальными фильтрами -->
       <div class="separator"></div>
 
-      <!-- Теги фильтров -->
       <div class="filter-tags">
         <button
           v-for="(category, index) in categories"
@@ -25,13 +23,10 @@
       </div>
     </div>
 
-    <!-- Выпадающий список для "Обрані" -->
     <div v-if="dropdownOpen" class="dropdown-menu">
       <button @click="selectCategory('Обрані')">Обрані</button>
-      <!-- Можешь добавить дополнительные опции здесь, если нужно -->
     </div>
 
-    <!-- Линия после фильтров, на всю ширину -->
     <div class="bottom-line"></div>
   </div>
 </template>
@@ -100,7 +95,7 @@ export default {
   color: #f55;
 }
 .filter-btn.favorites {
-  min-width: 100px; 
+  min-width: 100px;
   margin-right: 10px;
 }
 

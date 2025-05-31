@@ -6,7 +6,6 @@ import RestaurantPage from '../views/RestaurantPage.vue'
 import ProfilePage from '../views/ProfilePage.vue'
 import GoogleAuthCallback from '../components/GoogleAuthCallback.vue'
 
-// вкладені сторінки профілю:
 import ProfileUser from '../components/ProfileUser.vue'
 import FavoriteDishes from '../components/FavoriteDishes.vue'
 import Reservations from '../components/Reservations.vue'

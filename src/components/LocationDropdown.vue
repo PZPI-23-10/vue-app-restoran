@@ -9,7 +9,7 @@
         <div class="column">
           <div class="header">Область</div>
           <div
-            v-for="region in Object.keys(locations)"
+            v-for="region in regions"
             :key="region"
             class="item"
             :class="{ selected: selectedRegion === region }"
@@ -18,13 +18,14 @@
             {{ region }}
           </div>
         </div>
+
         <div class="column">
           <div class="header">Місто</div>
           <div
-            v-for="city in locations[selectedRegion]"
+            v-for="city in cities"
             :key="city"
             class="item"
-            @click="goToRestaurantPage(city)"
+            @click="selectCity(city)"
           >
             {{ city }}
           </div>
@@ -35,21 +36,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { cityCoords } from '../services/cityCoords'  // <-- импортируем твой объект
 
 const open = ref(false)
-const selectedRegion = ref('Запорізька')
-
+const selectedRegion = ref(Object.keys(cityCoords)[0])  // выбираем первую область по умолчанию
 const dropdownRef = ref(null)
-const router = useRouter()
 const emit = defineEmits(['citySelected'])
 
-const locations = {
-  Запорізька: ['Київ', 'Харків'],
-  Львівська: ['Львів', 'Дрогобич'],
-  Одеська: ['Одеса', 'Ізмаїл']
-}
+// Вычисляем список регионов
+const regions = Object.keys(cityCoords)
+
+// Вычисляем список городов для выбранного региона
+const cities = computed(() => {
+  return Object.keys(cityCoords[selectedRegion.value])
+})
 
 function toggle() {
   open.value = !open.value
@@ -59,9 +60,8 @@ function selectRegion(region) {
   selectedRegion.value = region
 }
 
-function goToRestaurantPage(city) {
+function selectCity(city) {
   emit('citySelected', city)
-  router.push({ name: 'RestaurantPageList', params: { city } })
   open.value = false
 }
 

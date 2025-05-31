@@ -10,17 +10,13 @@ import Footer from './components/Footer.vue'
 
 export default {
   name: 'App',
-  components: {
-    MainMenu,
-    Footer
-  },
+  components: { MainMenu, Footer },
   data() {
-    return {
-      selectedCity: 'Київ'
-    }
+    return { selectedCity: 'Київ' }
   }
 }
 </script>
+
 
 <style>
 body {

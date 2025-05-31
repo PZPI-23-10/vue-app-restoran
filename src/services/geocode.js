@@ -1,3 +1,4 @@
+// src/services/geocode.js
 import axios from 'axios'
 
 export async function geocodeAddress(region, city, street) {
@@ -7,17 +8,16 @@ export async function geocodeAddress(region, city, street) {
   try {
     const response = await axios.get(url, {
       headers: {
-        'Accept-Language': 'uk-UA',
-        'User-Agent': 'YourAppName/1.0 (avecezarus45@email.com)' // 💡 важно!
+        'User-Agent': 'your-app-name@example.com'
       }
     })
 
     if (response.data.length > 0) {
       const { lat, lon } = response.data[0]
       return { latitude: parseFloat(lat), longitude: parseFloat(lon) }
-    } else {
-      return null
     }
+
+    return null
   } catch (error) {
     console.error('Geocoding error:', error)
     return null
