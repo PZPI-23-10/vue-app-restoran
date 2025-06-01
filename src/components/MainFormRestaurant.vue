@@ -1,12 +1,31 @@
 <template>
   <div class="restaurant-container">
     <div class="top-section">
-      <div class="image-container">
-        <img :src="mainImage" alt="Фото ресторану" />
+      <div class="main-image">
+        <div class="slider">
+          <div class="slides" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
+            <div class="slide" v-for="(photo, index) in allPhotos" :key="index">
+              <img :src="photo" alt="Фото ресторану" />
+            </div>
+          </div>
+          <div class="dots">
+            <span
+              v-for="(photo, index) in allPhotos"
+              :key="index"
+              :class="{ active: index === currentSlide }"
+              @click="goToSlide(index)"
+            ></span>
+          </div>
+        </div>
       </div>
 
       <div class="info-container">
-        <h1>{{ restaurant.name }} <span class="stars">{{ getStars(restaurant.rating ?? 4) }}</span></h1>
+        <h1>
+          {{ restaurant.name }}
+          <span class="stars">{{ getStars(averageRating) }}</span>
+          <span class="review-count">({{ restaurant.reviews?.length ?? 0 }})</span>
+        </h1>
+
         <p class="description">{{ restaurant.description }}</p>
 
         <div class="meta-block">
@@ -23,11 +42,13 @@
       </div>
     </div>
 
-    <div class="dishes-section" v-if="restaurant.dishes.length > 0">
+    <div class="dishes-section" v-if="restaurant.dishes?.length > 0">
       <div v-for="dish in restaurant.dishes" :key="dish.id" class="dish-card">
         <img :src="dish.photoUrl" alt="Блюдо" />
         <div class="dish-info">
-          <div class="dish-title">{{ dish.title }} {{ getStars(dish.rating ?? 5) }}</div>
+          <div class="dish-title">
+            {{ dish.title }} {{ getStars(dish.rating ?? 5) }}
+          </div>
           <div class="dish-desc">{{ dish.description }}</div>
         </div>
       </div>
@@ -36,27 +57,56 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 
 const props = defineProps({
-  restaurant: Object
-})
-
-const mainImage = computed(() => {
-  if (props.restaurant?.photos?.length > 0) {
-    return props.restaurant.photos[0]
+  restaurant: {
+    type: Object,
+    required: true
   }
-  return props.restaurant?.photoUrl ?? ''
 })
 
-const cuisineList = computed(() => props.restaurant?.cuisines?.map(c => c.cuisine.name).join(', ') || 'Не вказано')
-const tagList = computed(() => props.restaurant?.tags?.map(t => t.tag.name).join(', ') || '—')
+const allPhotos = computed(() => {
+  if (props.restaurant?.photos?.length > 0) {
+    return props.restaurant.photos.map(photo => photo.url)
+  }
+  return ['/images/default_restaurant.jpg']
+})
+
+const cuisineList = computed(() =>
+  props.restaurant?.cuisines?.map(c => c.cuisine.name).join(', ') || 'Не вказано'
+)
+
+const tagList = computed(() =>
+  props.restaurant?.tags?.map(t => t.tag.name).join(', ') || '—'
+)
+
+const averageRating = computed(() => {
+  const reviews = props.restaurant?.reviews ?? []
+  if (reviews.length === 0) return 0
+  const total = reviews.reduce((sum, review) => sum + (review.rating ?? 0), 0)
+  return total / reviews.length
+})
 
 function getStars(rating) {
-  const full = '★'.repeat(Math.floor(rating))
-  const empty = '☆'.repeat(5 - Math.floor(rating))
+  const rounded = Math.round(rating)
+  const full = '★'.repeat(rounded)
+  const empty = '☆'.repeat(5 - rounded)
   return full + empty
 }
+
+const currentSlide = ref(0)
+
+function goToSlide(index) {
+  currentSlide.value = index
+}
+
+// Автоматическое переключение слайдов
+onMounted(() => {
+  setInterval(() => {
+    currentSlide.value = (currentSlide.value + 1) % allPhotos.value.length
+  }, 3000)
+})
 </script>
 
 <style scoped>
@@ -71,19 +121,59 @@ function getStars(rating) {
   align-items: flex-start;
 }
 
-.image-container {
+.main-image {
   width: 400px;
   height: 300px;
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid #ccc;
+  position: relative;
 }
 
-.image-container img {
+.slider {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.slides {
+  display: flex;
+  transition: transform 0.5s ease;
+  height: 100%;
+}
+
+.slide {
+  min-width: 100%;
+  height: 100%;
+}
+
+.slide img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background-color: white;
+
+}
+
+.dots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.dots span {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 0 4px;
+  background: #ddd;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.dots span.active {
+  background: #333;
 }
 
 .info-container {
@@ -93,12 +183,19 @@ function getStars(rating) {
 h1 {
   font-size: 32px;
   margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .stars {
   font-size: 22px;
   color: #ffc107;
-  margin-left: 10px;
+}
+
+.review-count {
+  font-size: 16px;
+  color: #666;
 }
 
 .description {

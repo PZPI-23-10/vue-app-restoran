@@ -1,14 +1,13 @@
-// src/services/geocode.js
 import axios from 'axios'
 
 export async function geocodeAddress(region, city, street) {
-  const query = `${region}, ${city}, ${street}`
+  const query = `${street}, ${city}, ${region}, Україна`
   const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`
 
   try {
     const response = await axios.get(url, {
       headers: {
-        'User-Agent': 'your-app-name@example.com'
+        'User-Agent': 'VueAppRestoran/1.0 (your-email@example.com)'
       }
     })
 

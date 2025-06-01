@@ -14,7 +14,6 @@
         </div>
       </div>
     </div>
-
     <h2 class="cities-title">Популярні ресторани</h2>
 
     <div class="restaurant-grid">
@@ -22,9 +21,12 @@
            v-for="restaurant in displayedRestaurants"
            :key="restaurant.id"
            @click="goToRestaurant(restaurant.id)">
-        <img :src="restaurant.photoUrl" alt="Фото ресторану" class="restaurant-img" />
+        <img :src="getPhotoUrl(restaurant)" alt="Фото ресторану" class="restaurant-img" />
         <div class="restaurant-card-content">
-          <h3>{{ restaurant.name }}</h3>
+          <div class="header-row">
+            <h3>{{ restaurant.name }}</h3>
+            <div class="rating">{{ getRatingDisplay(restaurant) }}</div>
+          </div>
           <p>{{ restaurant.city }}, {{ restaurant.street }}</p>
           <p>{{ restaurant.cuisines?.[0]?.cuisine?.name || 'Без кухні' }}</p>
         </div>
@@ -40,9 +42,7 @@ import axios from 'axios'
 import DatePicker from '../components/DatePicker.vue'
 import DropdownSelect from '../components/DropdownSelect.vue'
 
-// 🔧 глобальный кэш (будет жить в памяти при навигации между страницами)
 const cachedRestaurants = ref(null)
-
 const router = useRouter()
 
 const time = ref('19:00')
@@ -88,12 +88,43 @@ onMounted(async () => {
   }
 })
 
-// ограничим 4 ресторана
-const displayedRestaurants = computed(() => restaurants.value.slice(0, 4))
+function getAverageRating(restaurant) {
+  if (!restaurant.reviews || restaurant.reviews.length === 0) {
+    return null
+  }
+  const validReviews = restaurant.reviews.filter(r => r.rating !== null && r.rating !== undefined)
+  if (validReviews.length === 0) {
+    return null
+  }
+  const sum = validReviews.reduce((total, review) => total + review.rating, 0)
+  return (sum / validReviews.length).toFixed(1)
+}
+
+function getRatingDisplay(restaurant) {
+  const avg = getAverageRating(restaurant)
+  return avg !== null ? `⭐ ${avg}/5` : '☆ 0/5'
+}
+
+const displayedRestaurants = computed(() => {
+  return [...restaurants.value]
+    .sort((a, b) => {
+      const ratingA = parseFloat(getAverageRating(a)) || 0
+      const ratingB = parseFloat(getAverageRating(b)) || 0
+      return ratingB - ratingA
+    })
+    .slice(0, 4)
+})
 
 function goToRestaurant(id) {
   router.push(`/restaurant/${id}`)
 }
+function getPhotoUrl(restaurant) {
+  if (restaurant.photos && restaurant.photos.length > 0) {
+    return restaurant.photos[0].url;
+  }
+  return '/images/default_restaurant.jpg';
+}
+
 </script>
 
 <style scoped>
@@ -101,20 +132,17 @@ function goToRestaurant(id) {
   padding: 60px 40px;
   font-family: 'Poppins', sans-serif;
 }
-
 .filters-wrapper {
   display: flex;
   justify-content: center;
   margin-bottom: 30px;
 }
-
 .filters {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
 }
-
 .filter-group {
   display: flex;
   border: 1px solid #333;
@@ -122,7 +150,6 @@ function goToRestaurant(id) {
   overflow: visible;
   position: relative;
 }
-
 .filter-search {
   display: flex;
   align-items: center;
@@ -133,7 +160,6 @@ function goToRestaurant(id) {
   flex-shrink: 0;
   background-color: white;
 }
-
 .filter-search input {
   border: none;
   outline: none;
@@ -141,7 +167,6 @@ function goToRestaurant(id) {
   background: none;
   width: 160px;
 }
-
 .cities-title {
   font-size: 24px;
   margin: 40px 0 20px;
@@ -149,7 +174,6 @@ function goToRestaurant(id) {
   display: inline-block;
   padding-bottom: 10px;
 }
-
 .restaurant-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -157,7 +181,6 @@ function goToRestaurant(id) {
   margin-top: 20px;
   justify-content: center;
 }
-
 .restaurant-card {
   background: white;
   border-radius: 16px;
@@ -168,20 +191,16 @@ function goToRestaurant(id) {
   flex-direction: column;
   cursor: pointer;
 }
-
 .restaurant-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
 }
-
 .restaurant-img {
   width: 100%;
   height: 200px;
-  object-fit: contain;
+  object-fit: cover;
   background-color: #f9f9f9;
-  padding: 15px;
 }
-
 .restaurant-card-content {
   padding: 20px;
   text-align: left;
@@ -189,17 +208,26 @@ function goToRestaurant(id) {
   flex-direction: column;
   gap: 10px;
 }
-
 .restaurant-card h3 {
   font-size: 20px;
   font-weight: 600;
   margin: 0;
   color: #222;
 }
-
 .restaurant-card p {
   font-size: 14px;
   color: #555;
   margin: 0;
+}
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.rating {
+  font-size: 16px;
+  color: #f39c12;
+  font-weight: 500;
+  white-space: nowrap;
 }
 </style>

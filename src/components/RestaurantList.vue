@@ -19,15 +19,13 @@
       </div>
 
       <div class="rating-row">
-        <span class="stars">★★★★☆</span>
-        <span class="rating-text">Добре</span>
-        <span class="review-count">(4032)</span>
+        <span class="stars">{{ getStars(restaurant) }}</span>
+        <span class="rating-text">{{ getRatingText(restaurant) }}</span>
+        <span class="review-count">({{ restaurant.reviews?.length || 0 }})</span>
       </div>
 
       <div class="tags">
-        <span class="tag">Домашня</span>
-        <span class="tag">Традиційна їжа</span>
-        <span class="tag">Швидко</span>
+        <span v-for="tag in restaurant.tags" :key="tag.id" class="tag">{{ tag.tag?.name }}</span>
       </div>
     </div>
   </div>
@@ -52,6 +50,28 @@ function goToRestaurant(id) {
   } else {
     alert('У цього ресторану немає ID!')
   }
+}
+
+function getAverageRating(restaurant) {
+  if (!restaurant.reviews || restaurant.reviews.length === 0) return 0
+  const total = restaurant.reviews.reduce((sum, review) => sum + (review.rating ?? 0), 0)
+  return total / restaurant.reviews.length
+}
+
+function getStars(restaurant) {
+  const avg = Math.round(getAverageRating(restaurant))
+  const full = '★'.repeat(avg)
+  const empty = '☆'.repeat(5 - avg)
+  return full + empty
+}
+
+function getRatingText(restaurant) {
+  const avg = getAverageRating(restaurant)
+  if (avg >= 4.5) return 'Відмінно'
+  if (avg >= 3.5) return 'Добре'
+  if (avg >= 2.5) return 'Задовільно'
+  if (avg >= 1.5) return 'Погано'
+  return 'Дуже погано'
 }
 </script>
 
