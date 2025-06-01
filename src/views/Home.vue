@@ -198,7 +198,7 @@ function getPhotoUrl(restaurant) {
 .restaurant-img {
   width: 100%;
   height: 200px;
-  object-fit: cover;
+  object-fit: contain;
   background-color: #f9f9f9;
 }
 .restaurant-card-content {
