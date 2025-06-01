@@ -88,81 +88,82 @@ export default {
     handleImageError(event) {
       event.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="%23f0f0f0"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="40">🍽️</text></svg>';
     },
- async loadRestaurantDetails(restaurantId) {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Get', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ RestaurantId: restaurantId })
-        });
 
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(`Ошибка сервера: ${res.status} - ${JSON.stringify(errorData)}`);
-        }
+    async loadRestaurantDetails(restaurantId) {
+          try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Get', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+              },
+              body: JSON.stringify({ RestaurantId: restaurantId })
+            });
 
-        const data = await res.json();
-        console.log('Ответ сервера:', data);
-        this.restaurantToEdit = data;
-        this.isEditMode = true;
-      } catch (error) {
-        console.error('Не вдалося завантажити дані ресторану:', error);
-      }
-  },
+            if (!res.ok) {
+              const errorData = await res.json();
+              throw new Error(`Ошибка сервера: ${res.status} - ${JSON.stringify(errorData)}`);
+            }
 
-  isOwner(restaurant) {
-      const userId = localStorage.getItem('userId');
-      return restaurant.ownerId === userId;
-  },
-
-  isModerator(restaurant) {
-      const email = localStorage.getItem('email');
-      return (restaurant.moderatorEmails || []).includes(email);
-  },
-
-async editRestaurant(restaurant) {
-  try {
-    const token = localStorage.getItem('token');
-
-    const response = await axios.post(
-      'https://backend-restoran.onrender.com/api/Restaurant/Editing',
-      {
-        RestaurantId: restaurant.id,
-        Name: restaurant.name,
-        City: restaurant.city,
-        Region: restaurant.region,
-        Street: restaurant.street,
-        Description: restaurant.description,
-        Tags: restaurant.tags,
-        Cuisine: restaurant.cuisine,
-        PhotoUrl: restaurant.photoUrl,
-        Email: restaurant.email,
-        Layout: restaurant.layout,
-        Schedule: restaurant.schedule,
-        Dishes: restaurant.dishes,
-        Organization: restaurant.organization,
-        ModeratorEmails: restaurant.moderatorEmails
+            const data = await res.json();
+            console.log('Ответ сервера:', data);
+            this.restaurantToEdit = data;
+            this.isEditMode = true;
+          } catch (error) {
+            console.error('Не вдалося завантажити дані ресторану:', error);
+          }
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+
+    isOwner(restaurant) {
+        const userId = localStorage.getItem('userId');
+        return restaurant.ownerId === userId;
+    },
+
+    isModerator(restaurant) {
+        const email = localStorage.getItem('email');
+        return (restaurant.moderatorEmails || []).includes(email);
+    },
+
+  async editRestaurant(restaurant) {
+    try {
+      const token = localStorage.getItem('token');
+
+      const response = await axios.post(
+        'https://backend-restoran.onrender.com/api/Restaurant/Editing',
+        {
+          RestaurantId: restaurant.id,
+          Name: restaurant.name,
+          City: restaurant.city,
+          Region: restaurant.region,
+          Street: restaurant.street,
+          Description: restaurant.description,
+          Tags: restaurant.tags,
+          Cuisine: restaurant.cuisine,
+          PhotoUrl: restaurant.photoUrl,
+          Email: restaurant.email,
+          Layout: restaurant.layout,
+          Schedule: restaurant.schedule,
+          Dishes: restaurant.dishes,
+          Organization: restaurant.organization,
+          ModeratorEmails: restaurant.moderatorEmails
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
-      }
-    );
+      );
 
-    console.log('Успешно обновлено:', response.data);
-    // тут можно закрыть форму редактирования или обновить список ресторанов
+      console.log('Успешно обновлено:', response.data);
+      // тут можно закрыть форму редактирования или обновить список ресторанов
 
-  } catch (error) {
-    console.error('Ошибка при сохранении данных ресторана:', error);
-    console.error('Ответ от сервера:', error.response?.data);
-  }
-},
+    } catch (error) {
+      console.error('Ошибка при сохранении данных ресторана:', error);
+      console.error('Ответ от сервера:', error.response?.data);
+    }
+  },
     
     handleRestaurantCreated(newRestaurant) {
       this.restaurants.push(newRestaurant)
@@ -215,7 +216,6 @@ async editRestaurant(restaurant) {
     this.restaurants = (response.data.restaurantsOwned || []).map(restaurant => ({
       ...restaurant,
       role: 'owner',
-      // Добавляем fallback изображение, если photoUrl отсутствует
       photoUrl: restaurant.photoUrl || 'https://via.placeholder.com/150?text=No+Image'
     }));
 
