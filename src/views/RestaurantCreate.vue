@@ -1,37 +1,103 @@
 <template>
   <div class="restaurant-constructor">
-    <div class="first-section">
-      <div class="photo-block" @click="triggerFileInput">
+    <div class="restaurant-info-card">
+      <div class="photo-form-wrapper">
         <input
           ref="fileInput"
           type="file"
           accept="image/*"
-          @change="handleFileChange"
+          @change="handleGalleryChange"
           style="display: none"
         />
-        <img v-if="restaurantData.photoUrl" :src="restaurantData.photoUrl" class="photo-preview" />
-        <div v-else class="photo-placeholder">+ Додати фото</div>
+
+        <div class="gallery-container">
+          <button class="gallery-arrow left" @click.stop="prevPhoto">&lt;</button>
+
+          <div class="gallery-frame" @click="handleSlotClick">
+            <img
+              v-if="restaurantData.gallery[activeIndex]"
+              :src="restaurantData.gallery[activeIndex]"
+              class="preview-image"
+              alt="Фото ресторана"
+            />
+            <div v-else class="photo-placeholder">+ Додати фото</div>
+          </div>
+
+          <button class="gallery-arrow right" @click.stop="nextPhoto">&gt;</button>
+        </div>
+
+        <div class="gallery-controls">
+          <!-- Индикаторы -->
+          <div class="gallery-indicators">
+            <span
+              v-for="(img, index) in maxSlots"
+              :key="index"
+              :class="['dot', { active: index === activeIndex }]"
+            ></span>
+          </div>
+
+          <!-- Кнопка удаления -->
+          <button
+            v-if="restaurantData.gallery[activeIndex]"
+            class="remove-photo"
+            @click="removePhoto(activeIndex)"
+          >
+            ✕ Удалити фото
+          </button>
+        </div>
       </div>
+
 
       <div class="form-block">
         <input class="name-input" type="text" placeholder="Назва ресторану" v-model="restaurantData.name" />
         <textarea class="description-input" placeholder="Опис" v-model="restaurantData.description"></textarea>
+    <div class="dress-code-section">
+      <div class="dress-code-row">
+        <div class="tag-select">
+          <label>Дресс-код</label>
+          <select @change="addTag($event, 'dressCode')">
+            <option value="">Оберіть варіант</option>
+            <option v-for="d in dressCodeOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
+          </select>
 
+          <div class="selected-tags">
+            <span
+              v-for="(tag, index) in restaurantData.dressCode"
+              :key="tag.id"
+              class="tag selected"
+              @click="removeTag(index, 'dressCode')"
+            >
+              {{ tag.name }} ✕
+            </span>
+          </div>
+        </div>
+
+        <div class="checkbox-pair">
+          <label class="option-checkbox">
+            <input type="checkbox" v-model="restaurantData.hasParking" />
+            🚗
+          </label>
+          <label class="option-checkbox">
+            <input type="checkbox" v-model="restaurantData.accessible" />
+            ♿
+          </label>
+        </div>
+      </div>
       <div class="tags-wrapper">
         <div class="tag-select">
           <label>Кухня</label>
           <select @change="addTag($event, 'cuisine')">
             <option value="">Оберіть кухню</option>
-            <option v-for="c in cuisineOptions" :key="c" :value="c">{{ c }}</option>
+            <option v-for="c in cuisineOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
           </select>
           <div class="selected-tags">
             <span 
               v-for="(tag, index) in restaurantData.cuisine" 
-              :key="tag"
+              :key="tag.id"
               class="tag selected"
               @click="removeTag(index, 'cuisine')"
             >
-              {{ tag }} ✕
+              {{ tag.name }} ✕
             </span>
           </div>
         </div>
@@ -40,22 +106,24 @@
             <label>Теги</label>
             <select @change="addTag($event, 'tags')">
               <option value="">Оберіть тег</option>
-              <option v-for="t in tagOptions" :key="t" :value="t">{{ t }}</option>
+              <option v-for="t in tagOptions" :key="t.id" :value="t.id">{{ t.name }}</option>
             </select>
             <div class="selected-tags">
               <span 
                 v-for="(tag, index) in restaurantData.tags" 
-                :key="tag"
+                :key="tag.id"
                 class="tag selected"
                 @click="removeTag(index, 'tags')"
               >
-                {{ tag }} ✕
+                {{ tag.name }} ✕
               </span>
             </div>
           </div>
         </div>
       </div>
     </div>
+    </div>
+    
 
     <div class="middle-buttons">
       <button @click="openDishesList" class="view-btn">
@@ -66,7 +134,8 @@
       <button @click="openManagersList" class="view-btn">
         👨‍🍳 Переглянути модераторів
       </button>
-    </div> 
+    </div>
+     
     <transition name="fade-slide">
     <DishesList 
       v-if="activeForm === 'dishes'"
@@ -231,7 +300,7 @@
     />
     </transition>
   
-    <button class="publish-btn" @click="createRestaurant">Опублікувати (попередній перегляд)</button>
+    <button class="publish-btn" @click="createRestaurant">Опублікувати</button>
     </div>
   </div>
 </template>
@@ -255,27 +324,36 @@ export default {
     AddWorkHours,
     ConfirmCancelModal
   },
+
+  mounted() {
+    this.fetchOptions();
+  },
+
   data() {
     return {
       restaurantData: {
         name: '',
         description: '',
-        photoUrl: null,
+        gallery: Array(4).fill(""),
+        dressCode: [], 
+        hasParking: false, // 🚗
+        accessible: false, // ♿ 
         cuisine: [],
         tags: [],
         layout: [Array.from({ length: 120 }, () => null)],
         dishes: [],
         moderatorEmails: [],
+        schedule: [],
         street: '',
         city: '',        
         region: '',        
         email: '',
-        organization: '',
-        schedule: []           
+        organization: '',    
       },
       showConfirm: false,
-      selectedCuisine: [],
-      selectedTags: [],
+      dressCodeOptions: [],
+      cuisineOptions: [],
+      tagOptions: [],
       activeForm: null,
       interactionMode: 'default',
       cuisineOptions: ['Італійська кухня', 'Українська кухня'],
@@ -287,6 +365,8 @@ export default {
       previewX: 0,
       previewY: 0,
       activeFloorIndex: 0,
+      activeIndex: 0,
+      maxSlots: 4,
       leftElements: [
         { id: 1, title: 'Пряма стіна', image: '/images/wall.png' },
         { id: 2, title: 'Окружність', image: '/images/circle.png' },
@@ -316,10 +396,20 @@ export default {
     const query = this.$route.query;
 
     this.restaurantData.address = query.address || '';
-    this.restaurantData.owner = query.owner || '';
     this.restaurantData.email = query.email || '';
+    this.restaurantData.organization = query.organization || '';
   },
   methods: {
+    getNameById(category, id) {
+      let optionsMap = {
+        dressCode: this.dressCodeOptions,
+        cuisine: this.cuisineOptions,
+        tags: this.tagOptions,
+      };
+      const option = optionsMap[category].find(o => o.id === id);
+      return option ? option.name : 'Неизвестно';
+    },
+
     openForm(type, item = null) {
       this.activeForm = type;
       this.currentItem = item;
@@ -356,6 +446,36 @@ export default {
     closeManagerForm() {
       this.selectedManager = null;
       this.showManagerForm = false;
+    },
+
+    handleSlotClick() {
+      if (!this.restaurantData.gallery[this.activeIndex]) {
+        this.$refs.fileInput.click();
+      }
+    },
+
+    handleGalleryChange(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.restaurantData.gallery[this.activeIndex] = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    },
+
+    nextPhoto() {
+      this.activeIndex = (this.activeIndex + 1) % this.maxSlots;
+    },
+
+    prevPhoto() {
+      this.activeIndex =
+        (this.activeIndex - 1 + this.maxSlots) % this.maxSlots;
+    },
+
+    removePhoto(index) {
+       this.restaurantData.gallery[index] = null;
     },
 
     handleScheduleSave(schedule) {
@@ -484,23 +604,32 @@ export default {
       this.interactionMode = mode;
     },
 
-    triggerFileInput() {
-      this.$refs.fileInput.click();
-    },
+addTag(event, field) {
+  const selectedValue = event.target.value;
+  if (!selectedValue) return;
 
-    addTag(event, type) {
-      const value = event.target.value;
-      if (!value) return;
+  let options;
 
-      if (type === 'cuisine' && !this.restaurantData.cuisine.includes(value)) {
-        this.restaurantData.cuisine.push(value);
-      }
-      if (type === 'tags' && !this.restaurantData.tags.includes(value)) {
-        this.restaurantData.tags.push(value);
-      }
+  if (field === 'cuisine') {
+    options = this.cuisineOptions;
+  } else if (field === 'tags') {
+    options = this.tagOptions;
+  } else if (field === 'dressCode') {
+    options = this.dressCodeOptions;
+  }
 
-      event.target.selectedIndex = 0;
-    },
+  if (!options) {
+    console.error(`Options for ${field} not found`);
+    return;
+  }
+
+  const selectedObj = options.find(o => o.id == selectedValue);
+  if (selectedObj && !this.restaurantData[field].some(t => t.id === selectedObj.id)) {
+    this.restaurantData[field].push(selectedObj);
+  }
+
+  event.target.value = '';
+},
 
     onGridItemDragStart(index) {
       this.draggedElement = {
@@ -588,21 +717,25 @@ export default {
       };
     },
 
-    handleFileChange(event) {
-      const file = event.target.files[0];
-      if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          this.restaurantData.photoUrl = e.target.result;
-        };
-        reader.readAsDataURL(file);
+    async fetchOptions() {
+      try {
+        const response = await fetch('https://backend-restoran.onrender.com/api/Tag');
+        if (!response.ok) throw new Error('Ошибка при загрузке тегов');
+
+        const data = await response.json();
+
+        this.dressCodeOptions = data.dressCodes; 
+        this.cuisineOptions = data.cuisines;
+        this.tagOptions = data.tags;
+
+      } catch (error) {
+        console.error(error);
       }
     },
 
-    removeTag(index, type) {
-      if (type === 'cuisine') this.restaurantData.cuisine.splice(index, 1);
-      if (type === 'tags') this.restaurantData.tags.splice(index, 1);
-    },   
+  removeTag(index, field) {
+    this.restaurantData[field].splice(index, 1);
+  },
 
     editWorker(worker) {
       this.currentWorker = worker;
@@ -621,24 +754,24 @@ export default {
       this.openDishesList();
     },
 
-      handleDeleteDish(dishId) {
-        try {
-          const updatedDishes = this.restaurantData.dishes.filter(d => d.id !== dishId);
-          this.restaurantData.dishes = updatedDishes;
-          this.dishes = updatedDishes;
+    handleDeleteDish(dishId) {
+      try {
+        const updatedDishes = this.restaurantData.dishes.filter(d => d.id !== dishId);
+        this.restaurantData.dishes = updatedDishes;
+        this.dishes = updatedDishes;
 
-          localStorage.setItem('restaurant_dishes', JSON.stringify(updatedDishes));
+        localStorage.setItem('restaurant_dishes', JSON.stringify(updatedDishes));
 
-          this.activeForm = null;
-          this.currentItem = null;
+        this.activeForm = null;
+        this.currentItem = null;
 
-          this.$nextTick(() => {
-            this.activeForm = 'dishes';
-          });
-        } catch (error) {
-          console.error('Ошибка при удалении блюда:', error);
-        }
-      },
+        this.$nextTick(() => {
+          this.activeForm = 'dishes';
+        });
+      } catch (error) {
+        console.error('Ошибка при удалении блюда:', error);
+      }
+    },
           
   convertLayout(layoutByFloors) {
     if (!Array.isArray(layoutByFloors)) return [];
@@ -680,85 +813,104 @@ export default {
     return result.flat(); 
   },
 
-  async createRestaurant() {
-    this.errorMessage = '';
-    this.successMessage = '';
+    async createRestaurant() {
+      this.errorMessage = '';
+      this.successMessage = '';
 
-    const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
 
-    // ✅ Разделение адреса на части
-    if (this.restaurantData.address) {
-      const parts = this.restaurantData.address.split(',').map(p => p.trim());
-      this.restaurantData.region = parts[0] || '';
-      this.restaurantData.city = parts[1] || '';
-      this.restaurantData.street = parts.slice(2).join(', ') || '';
-      delete this.restaurantData.address;
-    }
-
-    // ✅ Менеджеры → moderatorEmails
-    if (Array.isArray(this.restaurantData.managers)) {
-      this.restaurantData.moderatorEmails = this.restaurantData.managers.map(m => m.email);
-      delete this.restaurantData.managers;
-    }
-
-    // ✅ Владелец
-    this.restaurantData.owner = userId;
-
-    // ✅ Приведение блюд в правильный формат
-    if (Array.isArray(this.restaurantData.dishes)) {
-      this.restaurantData.dishes = this.restaurantData.dishes.map(dish => {
-        const { id, photo, image, ...rest } = dish;
-        return {
-          ...rest,
-          photoUrl: image || '', // ← обязательно строка
-          tags: dish.tags || [], // ← пустой массив, если нет
-          name: dish.name || '',
-          ingredients: dish.ingredients || '',
-          price: Number(dish.price) || 0,
-          weight: Number(dish.weight) || 0
-        };
-      });
-    }
-
-    
-// ✅ Layout — корректное преобразование с учётом этажей и координат
-    if (Array.isArray(this.restaurantData.layout)) {
-      this.restaurantData.layout = this.convertLayout(this.restaurantData.layout);
-    }
-
-    // ✅ Schedule — добавляем open/close даже в выходные
-    if (Array.isArray(this.restaurantData.schedule)) {
-      this.restaurantData.schedule = this.restaurantData.schedule.map(day => ({
-        day: day.day || '',
-        isDayOff: !!day.isClosed || !!day.isDayOff,
-        open: day.isClosed || day.isDayOff ? '' : (day.open || ''),
-        close: day.isClosed || day.isDayOff ? '' : (day.close || '')
-      }));
-    }
-
-    try {
-      console.log('Отправляемые данные:', JSON.parse(JSON.stringify(this.restaurantData)));
-
-      const response = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Create', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(this.restaurantData),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Помилка при створенні ресторану: ${errorText}`);
+      // ✅ Разделение адреса
+      if (this.restaurantData.address) {
+        const parts = this.restaurantData.address.split(',').map(p => p.trim());
+        this.restaurantData.region = parts[0] || '';
+        this.restaurantData.city = parts[1] || '';
+        this.restaurantData.street = parts.slice(2).join(', ') || '';
+        delete this.restaurantData.address;
       }
 
-      this.successMessage = 'Ресторан успішно створено!';
-    } catch (error) {
-      this.errorMessage = error.message || 'Сталася помилка';
-    }
-  },
+      // ✅ Менеджеры → moderatorEmails
+      if (Array.isArray(this.restaurantData.managers)) {
+        this.restaurantData.moderatorEmails = this.restaurantData.managers.map(m => m.email);
+        delete this.restaurantData.managers;
+      }
+
+      // ✅ Преобразование блюд
+      if (Array.isArray(this.restaurantData.dishes)) {
+        this.restaurantData.dishes = this.restaurantData.dishes.map(dish => {
+          const { id, photo, image, ...rest } = dish;
+          return {
+            ...rest,
+            photoUrl: image || '',
+            name: dish.name || '',
+            ingredients: dish.ingredients || '',
+            price: Number(dish.price) || 0,
+            weight: Number(dish.weight) || 0
+          };
+        });
+      }
+
+      // ✅ Layout
+      if (Array.isArray(this.restaurantData.layout)) {
+        this.restaurantData.layout = this.convertLayout(this.restaurantData.layout);
+      }
+
+      // ✅ Schedule
+      if (Array.isArray(this.restaurantData.schedule)) {
+        this.restaurantData.schedule = this.restaurantData.schedule.map(day => ({
+          day: day.day || '',
+          isDayOff: !!day.isClosed || !!day.isDayOff,
+          open: (day.isClosed || day.isDayOff) ? '' : (day.open || ''),
+          close: (day.isClosed || day.isDayOff) ? '' : (day.close || '')
+        }));
+      }
+
+      try {
+        const payload = {
+          Name: this.restaurantData.name,
+          Description: this.restaurantData.description,
+          City: this.restaurantData.city,
+          Region: this.restaurantData.region,
+          Street: this.restaurantData.street,
+          Layout: this.restaurantData.layout,
+          Gallery: this.restaurantData.gallery.filter(img => img),
+          Schedule: this.restaurantData.schedule,
+          ModeratorEmails: this.restaurantData.moderatorEmails,
+          Tags: this.restaurantData.tags.map(t => t.name),           
+          Cuisine: this.restaurantData.cuisine.map(c => c.name),     
+          DressCode: this.restaurantData.dressCode.map(d => d.name), 
+          Dishes: this.restaurantData.dishes                         
+        };
+        console.log('Отправляемые данные:', payload);
+
+        const response = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Create', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          let errorText;
+          try {
+            const errorJson = await response.json();
+            errorText = JSON.stringify(errorJson);
+          } catch {
+            errorText = await response.text();
+          }
+          throw new Error(`Помилка при створенні ресторану: ${errorText}`);
+        }
+
+        this.successMessage = 'Ресторан успішно створено!';
+        this.$router.back();
+
+      } catch (error) {
+        console.error('Ошибка создания ресторана:', error);
+        this.errorMessage = error.message || 'Сталася помилка';
+      }
+    },
 
       cancelCreation() {
       localStorage.removeItem('restaurant_dishes');
@@ -782,60 +934,145 @@ export default {
       };
 
       this.$router.back();
-    }
+    },
   }
 }
-
 </script>
 
 
 <style scoped>
-.restaurant-constructor {
+.restaurant-info-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.photo-form-wrapper,
+.restaurant-constructor,
+.constructor-section {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 24px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-bottom: 32px;
   max-width: 1400px;
-  margin: auto;
+  margin-inline: auto;
 }
 
-.first-section {
-  display: flex;
-  gap: 24px;
-}
-
-.preview-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-.photo-block {
-  width: 300px;
-  height: 300px;
-  border: 2px dashed #ccc;
+/* === Фото-блок === */
+.gallery-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f9f9f9;
-  cursor: pointer;
-  overflow: hidden;
-  border-radius: 12px;
+  gap: 10px;
+  position: relative;
+  width: 320px;
+  height: 320px;
+  margin-bottom: 10px;
+}
+
+.gallery-frame {
+  width: 300px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; /* или scroll, если хочешь прокрутку */
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; 
 }
 
 .photo-placeholder {
   font-size: 16px;
-  color: #aaa;
+  color: #888;
   text-align: center;
 }
 
-.photo-preview {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: cover;
+.gallery-arrow {
+  background: rgba(255, 255, 255, 0.8);
+  border: none;
+  font-size: 20px;
+  padding: 6px 10px;
+  border-radius: 50%;
+  cursor: pointer;
 }
 
+.gallery-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.gallery-indicators {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ccc;
+}
+
+.dot.active {
+  background: #333;
+}
+
+.remove-photo {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* === Левая и правая сторона карточки === */
+.restaurant-info-card {
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.info-side {
+  flex: 1;
+  min-width: 300px;
+}
+
+/* === Input'ы === */
+.name-input,
+.description-input {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+/* === Секция dress-кода === */
+.dress-code-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
 .form-block {
   flex: 1;
   display: flex;
@@ -843,63 +1080,19 @@ export default {
   gap: 12px;
 }
 
-.name-input,
-.description-input {
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
-
-.selected-tags-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-.selected-tags-block {
-  flex: 1;
-}
-
-.selected-tags-block h4 {
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #555;
-}
-
-.selected-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.tag-select-block {
-  display: flex;
-  flex-direction: column;
-  width: 48%;
-}
-
-.tag {
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
-  background-color: #eee;
-  color: #333;
-}
-
+/* === Tags === */
 .tags-wrapper {
   display: flex;
   justify-content: space-between;
   gap: 32px;
 }
-
+.tag-select-block,
 .tag-select {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100px;
 }
 
 .tag-select select {
@@ -907,20 +1100,110 @@ export default {
   font-size: 14px;
   border: 1px solid #ccc;
   border-radius: 8px;
-  background-color: #fff;
+  background: #fff;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 50l60 60 60-60' fill='none' stroke='%23666' stroke-width='15'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 16px 16px;
   cursor: pointer;
+  width: 100%;
   transition: border-color 0.2s;
 }
-
 .tag-select select:focus {
   outline: none;
   border-color: #FF6F61;
 }
+
+.tag {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  background: #eee;
+  color: #333;
+  white-space: nowrap;
+}
+.tag.selected,
+.tag.active {
+  background-color: #FF6F61;
+  color: white;
+  font-size: 14px;
+  padding: 6px 10px;
+}
+
+/* === Scrollable Selected Tags === */
+.selected-tags-block {
+  flex: 1;
+}
+.selected-tags-block h4 {
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #555;
+}
+.dress-code-section .selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 31px; 
+  overflow-y: auto; 
+  padding: 6px;
+  background: #fafafa;
+  margin-top: 8px;
+  white-space: normal; 
+  scrollbar-width: thin;
+}
+.dress-code-section .selected-tags::-webkit-scrollbar {
+  height: 6px;
+}
+
+.dress-code-section .selected-tags::-webkit-scrollbar-thumb {
+  background: #aaa;
+  border-radius: 4px;
+}
+
+/* === Чекбоксы === */
+.checkbox-pair {
+  display: flex;
+  gap: 16px;
+  margin-top: 22px;
+}
+.option-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  background: #f0f0f0;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.option-checkbox input[type="checkbox"] {
+  display: none;
+}
+.option-checkbox:has(input:checked) {
+  background-color: #FF6F61;
+  color: white;
+}
+
+/* === Адаптив === */
+@media (max-width: 768px) {
+  .restaurant-info-card,
+  .photo-form-wrapper {
+    flex-direction: column;
+  }
+  .photo-side,
+  .info-side,
+  .photo-block {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+}
+
 .floor-controls {
   margin-top: 16px;
   display: flex;
@@ -961,19 +1244,6 @@ export default {
 
 .floor-tabs button.active {
   background-color: #4caf50;
-  color: white;
-}
-.tag.selected {
-  background-color: #FF6F61;
-  color: white;
-  padding: 6px 10px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.tag.active {
-  background-color: #FF6F61;
   color: white;
 }
 

@@ -14,8 +14,11 @@
     <label>Email</label>
     <input v-model="email" type="email" class="field" disabled />
 
-    <label>Адреса</label>
-    <input v-model="address" type="text" class="field" />
+    <label>Місто</label>
+    <input v-model="city" type="text" class="field" />
+
+    <label>Вулиця</label>
+    <input v-model="street" type="text" class="field" />
   </div>
 </template>
 
@@ -30,7 +33,8 @@ export default {
       middleName: '',
       lastName: '',
       email: '',
-      address: ''
+      city: '', 
+      street: ''
     }
   },
   async mounted() {
@@ -54,7 +58,8 @@ export default {
       this.middleName = user.middleName || ''
       this.lastName = user.lastName || ''
       this.email = user.email || ''
-      this.address = user.address || 'Не вказано'
+      this.city = user.city || 'Не вказано'
+      this.street = user.street || 'Не вказано'
     } catch (error) {
       console.error(' Помилка при отриманні даних профілю:', error)
     }

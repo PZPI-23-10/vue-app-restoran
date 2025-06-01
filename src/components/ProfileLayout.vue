@@ -12,6 +12,7 @@
           <li><router-link to="/profile/reservations" active-class="active">Резервації</router-link></li>
           <li><router-link to="/profile/favorites" active-class="active">Улюблені страви</router-link></li>
           <li><router-link to="/profile/info" active-class="active">Інфо акаунта</router-link></li>
+          <li><router-link to="/profile/restaurants" active-class="active">Ресторани</router-link></li>
         </ul>
       </aside>
 
@@ -31,10 +32,12 @@ export default {
     return {
       isAuthenticated: false,
       userName: '',
-      dateCreated: ''
+      dateCreated: '',
+      restaurantsOwned: []
     }
   },
 
+  
  async mounted() {
   this.isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
   const userId = localStorage.getItem('userId')
@@ -56,6 +59,7 @@ export default {
       this.favoriteRestaurant = user.favoriteRestaurant || 'Немає'
       this.dateCreated = user.dateCreated?.startsWith('0001') ? '' : user.dateCreated?.split('T')[0] || ''
       this.dateUpdated = user.dateUpdated?.startsWith('0001') ? '' : user.dateUpdated?.split('T')[0] || ''
+      this.restaurantsOwned = user.restaurantsOwned || []
 
     } catch (error) {
       console.error('Помилка при завантаженні профілю:', error)

@@ -89,6 +89,7 @@ export default {
       type: Boolean,
       required: true,
     },
+    schedule: { type: Array, default: () => [] },
   },
   emits: ["close", "save"],
   data() {
@@ -113,6 +114,12 @@ export default {
     };
   },
   watch: {
+    schedule: {
+      immediate: true,
+      handler(newVal) {
+        this.savedHours = JSON.parse(JSON.stringify(newVal));
+      }
+    },
     'workHours.day'(newDay) {
       const existing = this.savedHours.find(entry => entry.day === newDay);
       if (existing) {

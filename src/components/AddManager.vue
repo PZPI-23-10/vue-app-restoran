@@ -59,7 +59,15 @@ const submitForm = () => {
 
   const trimmedEmail = worker.value.email.trim();
 
-  emit('submit', { email: trimmedEmail });
+  const dataToSend = {
+    email: trimmedEmail
+  };
+
+  if (props.workerData && props.workerData.id !== undefined) {
+    dataToSend.id = props.workerData.id; // сохранить id при редактировании
+  }
+
+  emit('submit', dataToSend);
   worker.value = { email: '' };
   close();
 };
