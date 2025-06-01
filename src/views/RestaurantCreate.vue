@@ -312,7 +312,7 @@ import AddDish from '../components/AddDish.vue';
 import AddWorkHours from '../components/AddWorkHours.vue';
 import AddManager from '../components/AddManager.vue';
 import ConfirmCancelModal from '../components/ConfirmCancelModal.vue';
-
+import { geocodeAddress } from '../services/geocode';
 
 export default {
   name: 'RestaurantCreate',
@@ -867,6 +867,13 @@ addTag(event, field) {
         }));
       }
 
+      const coords = await geocodeAddress(
+        this.restaurantData.region,
+        this.restaurantData.city,
+        this.restaurantData.street
+      );
+      console.log('Coords from geocode:', coords);
+
       const firstImage = this.restaurantData.gallery.find(img => img);
 
       try {
@@ -884,7 +891,9 @@ addTag(event, field) {
           Cuisine: this.restaurantData.cuisine.map(c => c.name),     
           DressCode: this.restaurantData.dressCode.map(d => d.name), 
           Dishes: this.restaurantData.dishes,
-          PhotoUrl: firstImage || ''               
+          PhotoUrl: firstImage || '',
+          Latitude: coords?.latitude || 0,
+          Longitude: coords?.longitude || 0           
         };
         console.log('Отправляемые данные:', payload);
 
