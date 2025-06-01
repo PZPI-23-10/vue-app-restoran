@@ -334,6 +334,7 @@ export default {
       restaurantData: {
         name: '',
         description: '',
+        photoUrl: '',
         gallery: Array(4).fill(""),
         dressCode: [], 
         hasParking: false, // 🚗
@@ -399,6 +400,7 @@ export default {
     this.restaurantData.email = query.email || '';
     this.restaurantData.organization = query.organization || '';
   },
+
   methods: {
     getNameById(category, id) {
       let optionsMap = {
@@ -865,6 +867,8 @@ addTag(event, field) {
         }));
       }
 
+      const firstImage = this.restaurantData.gallery.find(img => img);
+
       try {
         const payload = {
           Name: this.restaurantData.name,
@@ -879,7 +883,8 @@ addTag(event, field) {
           Tags: this.restaurantData.tags.map(t => t.name),           
           Cuisine: this.restaurantData.cuisine.map(c => c.name),     
           DressCode: this.restaurantData.dressCode.map(d => d.name), 
-          Dishes: this.restaurantData.dishes                         
+          Dishes: this.restaurantData.dishes,
+          PhotoUrl: firstImage || ''               
         };
         console.log('Отправляемые данные:', payload);
 
