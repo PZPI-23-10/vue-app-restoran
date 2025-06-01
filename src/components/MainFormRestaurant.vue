@@ -1,5 +1,6 @@
 <template>
   <div class="restaurant-container">
+    <!-- Верхний блок -->
     <div class="top-section">
       <div class="main-image">
         <div class="slider">
@@ -9,22 +10,22 @@
             </div>
           </div>
           <div class="dots">
-            <span
-              v-for="(photo, index) in allPhotos"
-              :key="index"
-              :class="{ active: index === currentSlide }"
-              @click="goToSlide(index)"
-            ></span>
+            <span v-for="(photo, index) in allPhotos"
+                  :key="index"
+                  :class="{ active: index === currentSlide }"
+                  @click="goToSlide(index)">
+            </span>
           </div>
         </div>
       </div>
 
       <div class="info-container">
-        <h1>
-          {{ restaurant.name }}
-          <span class="stars">{{ getStars(averageRating) }}</span>
-          <span class="review-count">({{ restaurant.reviews?.length ?? 0 }})</span>
-        </h1>
+        <div class="header-line">
+          <div class="title-rating">
+            <h1>{{ restaurant.name }}</h1>
+            <span class="stars">{{ getStars(averageRating) }}</span>
+          </div>
+        </div>
 
         <p class="description">{{ restaurant.description }}</p>
 
@@ -42,17 +43,6 @@
       </div>
     </div>
 
-    <div class="dishes-section" v-if="restaurant.dishes?.length > 0">
-      <div v-for="dish in restaurant.dishes" :key="dish.id" class="dish-card">
-        <img :src="dish.photoUrl" alt="Блюдо" />
-        <div class="dish-info">
-          <div class="dish-title">
-            {{ dish.title }} {{ getStars(dish.rating ?? 5) }}
-          </div>
-          <div class="dish-desc">{{ dish.description }}</div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -71,6 +61,17 @@ const allPhotos = computed(() => {
     return props.restaurant.photos.map(photo => photo.url)
   }
   return ['/images/default_restaurant.jpg']
+})
+
+const currentSlide = ref(0)
+function goToSlide(index) {
+  currentSlide.value = index
+}
+
+onMounted(() => {
+  setInterval(() => {
+    currentSlide.value = (currentSlide.value + 1) % allPhotos.value.length
+  }, 5000)
 })
 
 const cuisineList = computed(() =>
@@ -94,19 +95,6 @@ function getStars(rating) {
   const empty = '☆'.repeat(5 - rounded)
   return full + empty
 }
-
-const currentSlide = ref(0)
-
-function goToSlide(index) {
-  currentSlide.value = index
-}
-
-// Автоматическое переключение слайдов
-onMounted(() => {
-  setInterval(() => {
-    currentSlide.value = (currentSlide.value + 1) % allPhotos.value.length
-  }, 3000)
-})
 </script>
 
 <style scoped>
@@ -152,7 +140,6 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: contain;
-
 }
 
 .dots {
@@ -180,22 +167,26 @@ onMounted(() => {
   flex: 1;
 }
 
-h1 {
-  font-size: 32px;
-  margin-bottom: 10px;
+.header-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title-rating {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
+h1 {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
 .stars {
   font-size: 22px;
   color: #ffc107;
-}
-
-.review-count {
-  font-size: 16px;
-  color: #666;
 }
 
 .description {
@@ -215,11 +206,15 @@ h1 {
   margin-bottom: 5px;
 }
 
+/* Страви */
 .dishes-section {
+  margin-top: 40px;
+}
+
+.dishes-list {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
-  margin-top: 30px;
 }
 
 .dish-card {

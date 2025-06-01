@@ -20,10 +20,9 @@
       </div>
 
       <button class="login-button" @click="handleLogin">Увійти</button>
-  <button class="google-button" @click="handleGoogleLogin">
-  Увійти через Google
-</button>
 
+      <!-- Google кнопка -->
+      <div id="google-signin" class="google-button"></div>
 
       <div class="links">
         <span class="link" @click="$emit('forgot')">Забули пароль?</span>
@@ -34,7 +33,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 
 const props = defineProps({
   visible: Boolean,
@@ -55,6 +54,7 @@ function togglePassword() {
 function handleBackdropClick() {
   emit('close')
 }
+
 async function handleLogin() {
   try {
     const response = await fetch('https://backend-restoran.onrender.com/api/Account/Login', {
@@ -92,13 +92,41 @@ async function handleLogin() {
   }
 }
 
+onMounted(async () => {
+  await nextTick() // гарантируем, что DOM готов
+  const observer = new MutationObserver(() => {
+    if (document.getElementById("google-signin") && window.google?.accounts?.id) {
+      observer.disconnect()
 
-function handleGoogleLogin() {
-  const clientId = '71975591740-1ikt0qhpb1g570oogv7pomahcr09hqf8.apps.googleusercontent.com'
-  const redirectUri = window.location.origin + '/google-auth-callback'
-  const scope = 'email profile openid'
-  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}`
-  window.location.href = url
+      google.accounts.id.initialize({
+        client_id: '144739779523-nnu4avrae8mavp9vhlbdhvihractabar.apps.googleusercontent.com',
+        callback: handleGoogleResponse
+      })
+
+      google.accounts.id.renderButton(
+        document.getElementById("google-signin"),
+        {
+          theme: "outline",
+          size: "large",
+          text: "continue_with",
+          locale: "uk"
+        }
+      )
+    }
+  })
+
+  observer.observe(document.body, { childList: true, subtree: true })
+})
+
+function handleGoogleResponse(response) {
+  const idToken = response.credential
+  console.log("Отримали ID Token: ", idToken)
+
+  // Здесь можно отправить idToken на сервер
+  localStorage.setItem('idToken', idToken)
+  localStorage.setItem('isAuthenticated', 'true')
+  window.dispatchEvent(new Event('storage'))
+  emit('close')
 }
 </script>
 
@@ -106,24 +134,10 @@ function handleGoogleLogin() {
 .google-button {
   margin-top: 12px;
   width: 100%;
-  height: 44px;
-  background-color: white;
-  color: #444;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-weight: bold;
-  font-size: 16px;
-  cursor: pointer;
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 8px;
 }
 
-.google-icon {
-  width: 20px;
-  height: 20px;
-}
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -136,18 +150,8 @@ function handleGoogleLogin() {
   align-items: center;
   justify-content: center;
   z-index: 999;
-  animation: fadeInBackdrop 0.4s ease-out;
   padding: 16px;
   box-sizing: border-box;
-}
-
-@keyframes fadeInBackdrop {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
 }
 
 .modal-content {
@@ -156,22 +160,8 @@ function handleGoogleLogin() {
   border-radius: 12px;
   width: 100%;
   max-width: 360px;
-  max-height: 100%;
-  overflow-y: auto;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-  animation: fadeInContent 0.5s ease-out;
   box-sizing: border-box;
-}
-
-@keyframes fadeInContent {
-  0% {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
 }
 
 .password-wrapper {
@@ -190,10 +180,6 @@ function handleGoogleLogin() {
   font-size: 14px;
   font-weight: 500;
   padding: 4px;
-}
-
-.no-backdrop-animation {
-  animation: none !important;
 }
 
 .title {
@@ -225,6 +211,7 @@ function handleGoogleLogin() {
   font-size: 14px;
   color: #333;
 }
+
 .remember-me input {
   accent-color: #FF6F61;
   width: 16px;

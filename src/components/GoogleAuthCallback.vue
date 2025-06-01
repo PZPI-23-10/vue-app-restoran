@@ -1,20 +1,25 @@
-<template>
-  <div class="auth-loading">
-    Авторизація через Google...
-  </div>
-</template>
+  <template>
+    <div class="auth-loading">
+      Авторизація через Google...
+    </div>
+  </template>
 
-<script setup>
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+  <script setup>
+  import { onMounted } from 'vue'
+  import { useRouter } from 'vue-router'
 
-const router = useRouter()
-
+  const router = useRouter()
 onMounted(async () => {
   const hash = window.location.hash
+  console.log("URL Hash:", hash) // Выводим весь hash из URL
+
   const params = new URLSearchParams(hash.slice(1))
 
   const accessToken = params.get('access_token')
+  console.log("Access Token:", accessToken)  // Вот здесь выводим сам токен
+const idToken = params.get('id_token');
+console.log("ID Token:", idToken);
+
   const error = params.get('error')
 
   if (error) {
@@ -38,7 +43,6 @@ onMounted(async () => {
         localStorage.setItem('isAuthenticated', 'true')
         localStorage.setItem('email', user.email)
 
-        // Сповіщаємо інші компоненти про зміни
         window.dispatchEvent(new Event('storage'))
         router.push('/')
       } else {
@@ -55,12 +59,13 @@ onMounted(async () => {
     router.push('/')
   }
 })
-</script>
 
-<style scoped>
-.auth-loading {
-  text-align: center;
-  margin-top: 100px;
-  font-size: 18px;
-}
-</style>
+  </script>
+
+  <style scoped>
+  .auth-loading {
+    text-align: center;
+    margin-top: 100px;
+    font-size: 18px;
+  }
+  </style>

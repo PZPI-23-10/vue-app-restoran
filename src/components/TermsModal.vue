@@ -59,8 +59,8 @@ defineProps({ visible: Boolean })
 const emit = defineEmits(['close', 'back'])
 
 function backToRegister() {
-  emit('back')      
-  emit('close')     
+  emit('back')
+  emit('close')
 }
 
 function close() {
