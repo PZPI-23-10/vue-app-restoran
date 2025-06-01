@@ -8,6 +8,6 @@
 
 <script>
 export default {
-  name: 'FavoriteDishes'
+  name: 'ProfileFavoriteDishes'
 }
 </script>

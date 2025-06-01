@@ -12,7 +12,7 @@
 
 <script>
 export default {
-  name: 'Reservations',
+  name: 'ProfileReservations',
   data() {
     return {
       reservations: [] // Можеш підключити API для отримання

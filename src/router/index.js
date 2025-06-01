@@ -8,8 +8,9 @@ import GoogleAuthCallback from '../components/GoogleAuthCallback.vue'
 
 // вкладені сторінки профілю:
 import ProfileUser from '../components/ProfileUser.vue'
-import FavoriteDishes from '../components/FavoriteDishes.vue'
-import Reservations from '../components/Reservations.vue'
+import ProfileFavoriteDishes from '../components/ProfileFavoriteDishes.vue'
+import ProfileReservations from '../components/ProfileReservations.vue'
+import ProfileRestaurants from '../components/ProfileRestaurants.vue' 
 
 const routes = [
   {
@@ -26,8 +27,9 @@ const routes = [
     children: [
       { path: '', redirect: 'info' },
       { path: 'info', component: ProfileUser },
-      { path: 'favorites', component: FavoriteDishes },
-      { path: 'reservations', component: Reservations }
+      { path: 'favorites', component: ProfileFavoriteDishes },
+      { path: 'reservations', component: ProfileReservations },
+      { path: 'restaurants', component: ProfileRestaurants}
     ]
   },
 

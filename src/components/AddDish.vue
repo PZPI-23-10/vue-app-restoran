@@ -12,9 +12,13 @@
                   ref="fileInput" 
                   accept="image/*" 
                   @change="onFileChange" 
-                  style="display:none"
+                  style="display: none;"
                 />
-                <div v-if="previewImage" class="preview" :style="{ backgroundImage: 'url(' + previewImage + ')' }"></div>
+                <div
+                  v-if="previewImage"
+                  class="preview"
+                  :style="{ backgroundImage: `url(${previewImage})` }"
+                ></div>
                 <div v-else class="placeholder">Натисніть щоб вибрати фото</div>
               </div>
 
@@ -67,33 +71,6 @@
               </textarea>
           </div>
 
-          <h3>Теги</h3>
-
-          <div class="input-field">
-            <select 
-              v-model="selectedTag" 
-              @change="addTagImmediately"
-            >
-              <option disabled value="">Оберіть тег</option>
-              <option>Гострий!</option>
-              <option>Вегетаріанський</option>
-              <option>Безглютеновий</option>
-            </select>
-          </div>
-
-             <div class="tags-container">
-                <div class="tags-scrollable">
-                  <span 
-                    v-for="tag in formData.tags" 
-                    :key="tag" 
-                    class="tag"
-                  >
-                    {{ tag }}
-                    <button @click="removeTag(tag)" class="tag-remove">×</button>
-                  </span>
-                </div>
-              </div>
-
           <div class="actions">
             <button class="cancel" @click="close">Скасувати</button>
             <button 
@@ -120,9 +97,16 @@ export default {
     },
     dishData: {
       type: Object,
-      default: null
+      default: () => ({
+      name: '',
+      weight: 0,
+      price: 0,
+      ingredients: '',
+      image: '',
+      }),
     }
   },
+  
   emits: ['close', 'submit', 'update-dish', 'show-dishes', 'add-dish'],
   data() {
     return {
@@ -136,10 +120,9 @@ export default {
       },
       formData: {
         name: '',
-        weight: '',
-        price: '',
+        weight: 0,
+        price: 0,
         ingredients: '',
-        tags: [],
         image: '',
       }
     };
@@ -147,10 +130,10 @@ export default {
   computed: {
     canSubmit() {
       return (
-        this.formData.name.trim() &&
+        (this.formData.name || '').trim() &&
         this.formData.weight > 0 &&
         this.formData.price > 0 &&
-        this.formData.ingredients.trim()
+        (this.formData.ingredients || '').trim()
       );
     },
 
@@ -187,24 +170,6 @@ export default {
           this.errors[field] = value > 0 ? '' : 'Значение должно быть больше нуля';
           break;
       }
-    },
-    
-    addTag() {
-      if (this.selectedTag && !this.formData.tags.includes(this.selectedTag)) {
-        this.formData.tags.push(this.selectedTag);
-        this.selectedTag = '';
-      }
-    },
-
-    addTagImmediately() {
-      if (this.selectedTag && !this.formData.tags.includes(this.selectedTag)) {
-        this.formData.tags.push(this.selectedTag);
-        this.selectedTag = ''; 
-      }
-    },
-    
-    removeTag(tag) {
-      this.formData.tags = this.formData.tags.filter(t => t !== tag);
     },
     
     submitForm() {
@@ -246,7 +211,6 @@ export default {
           weight: '',
           price: '',
           ingredients: '',
-          tags: [],
           image: '',
         };
         this.previewImage = null;
@@ -261,7 +225,7 @@ export default {
       const file = event.target.files[0];
       if (!file) return;
 
-      this.formData.photo = file;
+      this.formData.image = file;
       
       const reader = new FileReader();
       reader.onload = e => {
@@ -271,24 +235,32 @@ export default {
       reader.readAsDataURL(file);
     },
   },
-    watch: {
+  watch: {
     dishData: {
       immediate: true,
       handler(newVal) {
         if (newVal) {
-          this.formData = JSON.parse(JSON.stringify(newVal));
-          this.previewImage = newVal.image || null;
-          this.selectedTag = '';
+          this.formData = {
+            name: newVal.name || '',
+            weight: newVal.weight || 0,
+            price: newVal.price || 0,
+            ingredients: newVal.ingredients || '',
+            image: newVal.image || newVal.photoUrl || '',
+          };
+
+          this.previewImage = newVal.image || newVal.photoUrl || '';
         } else {
           this.formData = {
             name: '',
-            weight: '',
-            price: '',
+            weight: 0,
+            price: 0,
             ingredients: '',
-            tags: [],
+            image: '',
           };
           this.previewImage = null;
         }
+
+        this.selectedTag = '';
       }
     }
   },
@@ -316,6 +288,15 @@ export default {
   width: 500px;
   max-width: 90vw;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.photo-upload .preview {
+  width: 120px;
+  height: 120px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 8px;
+  border: 1px solid #ccc;
 }
 
 .add-dish-form {

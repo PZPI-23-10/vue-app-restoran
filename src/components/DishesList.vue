@@ -26,11 +26,11 @@
         <div class="dishes-container">
           <div v-for="dish in dishes" :key="dish.id" class="dish-card">
             <div class="dish-image">
-              <img v-if="dish.image" :src="dish.image" alt="Фото страви" />
+              <img v-if="dish.image || dish.photoUrl" :src="dish.image || dish.photoUrl" alt="Фото страви" />
               <div v-else class="image-placeholder">Немає фото</div>
             </div>
             <div class="dish-info">
-              <h3>{{ dish.name }}</h3>
+              <h3>{{ dish.name || dish.title }}</h3>
               <div class="dish-details">
                 <span>{{ dish.price }} грн</span>
                 <span>•</span>
