@@ -15,7 +15,7 @@
         <div class="gallery-container">
           <button class="gallery-arrow left" @click.stop="prevPhoto">&lt;</button>
 
-          <div class="gallery-frame" @click="handleSlotClick">
+          <div class="gallery-frame" @click="!isModeratorMode && handleSlotClick">
             <img
               v-if="restaurantData.gallery && restaurantData.gallery[activeIndex]"
               :src="restaurantData.gallery[activeIndex]"
@@ -29,7 +29,6 @@
         </div>
 
         <div class="gallery-controls">
-          <!-- Индикаторы -->
           <div class="gallery-indicators">
             <span
               v-for="(img, index) in maxSlots"
@@ -38,9 +37,8 @@
             ></span>
           </div>
 
-          <!-- Кнопка удаления -->
           <button
-          v-if="restaurantData && restaurantData.gallery && restaurantData.gallery[activeIndex]"
+            v-if="!isModeratorMode && restaurantData.gallery && restaurantData.gallery[activeIndex]"
             class="remove-photo"
             @click="removePhoto(activeIndex)"
           >
@@ -55,32 +53,36 @@
           type="text"
           placeholder="Назва ресторану"
           v-model="restaurantData.name"
+          :disabled="isModeratorMode"
         />
+
         <textarea
           class="description-input"
           placeholder="Опис"
           v-model="restaurantData.description"
+          :disabled="isModeratorMode"
         ></textarea>
 
         <div class="dress-code-section">
           <div class="dress-code-row">
             <div class="tag-select">
-          <label>Дресс-код</label>
-          <select @change="addTag($event, 'dressCode')" v-model="selectedDressCodeId">
-            <option value="">Оберіть варіант</option>
-            <option v-for="d in dressCodeOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
-          </select>
-          <div class="selected-tags">
-            <span 
-              v-for="(tag, index) in restaurantData.dressCode" 
-              :key="tag.id"
-              class="tag selected"
-              @click="removeTag(index, 'dressCode')"
-            >
-              {{ tag.name }} ✕
-            </span>
-          </div>
-        </div>
+              <label>Дресс-код</label>
+              <select @change="addTag($event, 'dressCode')" v-model="selectedDressCodeId">
+                <option value="">Оберіть варіант</option>
+                <option v-for="d in dressCodeOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
+              </select>
+
+              <div class="selected-tags">
+                <span
+                  v-for="(tag, index) in restaurantData.dressCode"
+                  :key="tag.id"
+                  class="tag selected"
+                  @click="removeTag(index, 'dressCode')"
+                >
+                  {{ tag.name }} ✕
+                </span>
+              </div>
+            </div>
             <div class="checkbox-pair">
               <label class="option-checkbox">
                 <input type="checkbox" v-model="restaurantData.hasParking" />
@@ -134,16 +136,18 @@
       </div>
     </div>
 
-    <!-- Редактор ресторану -->
     <div class="restaurant-editor">
       <div class="middle-buttons">
         <button @click="activeForm = 'dishes'">🍽️ Редагувати страви</button>
         <button @click="activeForm = 'hours'">Редагувати графік роботи</button>
-        <button @click="activeForm = 'managers'">Редагувати менеджерів👨‍🍳</button>
-        <button @click="openExtraEditSettings">✏️ Редагувати додаткові дані</button>
+        <button @click="activeForm = 'moderators'" v-if="!isModeratorMode">
+          Редагувати менеджерів👨‍🍳
+        </button>
+        <button @click="openExtraEditSettings" v-if="!isModeratorMode">
+          ✏️ Редагувати додаткові дані
+        </button>
       </div>
 
-      <!-- Список страв -->
       <transition name="fade-slide">
         <DishesList
           v-if="activeForm === 'dishes'"
@@ -156,20 +160,18 @@
         />
       </transition>
 
-      <!-- Список менеджерів -->
       <transition name="fade-slide">
         <ManagersList
-          v-if="activeForm === 'managers'"
+          v-if="activeForm === 'moderators'"
           :visible="true"
-          :managers="restaurantData.managers"
+          :managers="moderators"
           @close="closeForm"
-          @add="openAddManager"
-          @edit="openEditManager"
-          @delete="handleDeleteManager"
+          @add="openAddModerator"
+          @edit="openEditModerator"
+          @delete="handleDeleteModerator"
         />
       </transition>
 
-      <!-- Форма блюда -->
       <transition name="fade-scale">
         <AddDish
           v-if="activeForm === 'dish'"
@@ -182,19 +184,17 @@
         />
       </transition>
 
-      <!-- Форма менеджера -->
       <transition name="fade-slide">
         <AddManager
-          v-if="activeForm === 'manager'"
+          v-if="activeForm === 'moderator'"
           :workerData="currentItem"
           :visible="true"
-          @submit="handleFormSubmit"
+          @submit="handleModeratorFormSubmit"
           @close="closeForm"
-          @show-managers="activeForm = 'managers'"
+          @show-managers="activeForm = 'moderators'"
         />
       </transition>
 
-      <!-- Графік роботи -->
       <transition name="fade-slide">
         <AddWorkHours
           v-if="activeForm === 'hours'"
@@ -240,14 +240,14 @@
             :key="index"
             class="grid-cell"
             @dragover.prevent
-            @drop="onDrop(index)"
+            @drop="!isModeratorMode && onDrop(index)"
           >
             <div
               v-if="gridElements[index]"
               class="grid-item"
               draggable="true"
               @dragstart="onGridItemDragStart(index)"
-              @click.stop="handleGridItemClick(index)"
+              @click.stop="!isModeratorMode && handleGridItemClick(index)"
             >
               <img
                 :src="gridElements[index].image"
@@ -260,8 +260,10 @@
 
           <div class="floor-controls">
             <div class="floor-buttons">
-              <button @click="addFloor">+ Додати поверх</button>
-              <button @click="removeFloor" :disabled="restaurantData.layout.length === 1">- Видалити</button>
+              <button @click="!isModeratorMode && addFloor()" :disabled="isModeratorMode">+ Додати поверх</button>
+              <button 
+                  @click="!isModeratorMode && removeFloor()" 
+                  :disabled="isModeratorMode || restaurantData.layout.length === 1"  >- Видалити</button>
             </div>
             <div class="floor-tabs">
               <button
@@ -274,7 +276,7 @@
               </button>
             </div>
           </div>
-          <div class="elements-bottom">
+          <div class="elements-bottom" v-if="!isModeratorMode">
             <h3>Конструктор</h3>
               <div class="mode-buttons">
                 <button 
@@ -309,7 +311,6 @@
       </div>
     </div>
 
-    <!-- Кнопки дій -->
     <div class="action-buttons">
       <button class="cancel-btn" @click="cancelEdit">Скасувати</button>
       <button class="publish-btn" @click="updateRestaurant">💾 Зберегти зміни</button>
@@ -340,22 +341,36 @@ export default {
     ExtraEditSettings
   },
   computed: {
+  isModeratorMode() {
+    return this.isModerator;
+  },
+
   gridElements() {
     if (!this.restaurantData || !this.restaurantData.layout) return null;
     return this.restaurantData.layout[this.activeFloorIndex];
   },
+
   dishData() {
     return this.prepareDishData(this.selectedDish);
   },
+
   restaurantSchedule() {
     return this.restaurantData && this.restaurantData.schedule 
       ? [...this.restaurantData.schedule] 
       : [];
   },
-    currentPhoto() {
+
+  currentPhoto() {
     return this.restaurantData.gallery && this.restaurantData.gallery.length > 0
       ? this.restaurantData.gallery[this.activeIndex]
       : null;
+  },
+
+  moderatorsWithEmails() {
+    return this.moderators.map(mod => ({
+      ...mod,
+      displayEmail: mod.email || 'Email не знайдено'
+    }));
   },
 },
   props: {
@@ -363,12 +378,14 @@ export default {
         type: Object,
         required: true
     },
+    isModerator: Boolean,
   },
   data() {
     return {
     dishes: [],      
     schedule: [],
     moderators: [],
+    moderatorsRaw: [],
     restaurantRaw: null,
     restaurantData: null,
     activeFloorIndex: 0,
@@ -378,26 +395,26 @@ export default {
     draggedElement: null,
     activeForm: null,
     selectedDish: null,
-      leftElements: [
+    leftElements: [
         { id: 1, title: 'Пряма стіна', image: '/images/wall.png' },
         { id: 2, title: 'Окружність', image: '/images/circle.png' },
         { id: 3, title: 'Стіна "Трикутник"', image: '/images/triangle.png' },
         { id: 4, title: 'Двері', image: '/images/door.png' },
         { id: 5, title: 'Вікна', image: '/images/window.png' }
       ],
-      bottomElements: [
+    bottomElements: [
         { id: 6, title: 'Місце на двох', image: '/images/tableForTwo.png' },
         { id: 7, title: 'Місце на багатьох', image: '/images/tableForMany.png' },
         { id: 8, title: 'Столи з диваном/кріслом', image: '/images/tableWithSofa.png' },
         { id: 9, title: 'Барна стійка', image: '/images/bar.png' },
         { id: 10, title: 'Сходи', image: '/images/stairs.png' }
       ],
-      selectedCuisineId: '',
-      selectedTagId: '',
-      selectedDressCodeId: '',
-      cuisineOptions: [],
-      tagOptions: [],
-      dressCodeOptions: [],
+    selectedCuisineId: '',
+    selectedTagId: '',
+    selectedDressCodeId: '',
+    cuisineOptions: [],
+    tagOptions: [],
+    dressCodeOptions: [],
     };
   },
   created() {
@@ -421,21 +438,25 @@ export default {
     restaurant: {
       immediate: true,
       handler(newVal) {
-        this.prepareLayout();
-        this.prepareDataLists();
-
-        this.restaurantData = { ...newVal };
-
-        // Проверяем и копируем массивы
-        this.dishes = this.restaurantData.dishes ? [...this.restaurantData.dishes] : [];
-        this.tags = this.restaurantData.tags ? [...this.restaurantData.tags] : [];
-        this.schedule = this.restaurantData.schedule ? [...this.restaurantData.schedule] : [];
-        this.moderatorEmails = this.restaurantData.moderatorEmails ? [...this.restaurantData.moderatorEmails] : [];
+      this.initializeRestaurantData(newVal);
       }
     }
   },
 
   methods: {
+    initializeRestaurantData(newRestaurant) {
+      this.restaurantData = { ...newRestaurant };
+      this.dishes = newRestaurant.dishes ? [...newRestaurant.dishes] : [];
+      this.tags = newRestaurant.tags ? [...newRestaurant.tags] : [];
+      this.schedule = newRestaurant.schedule ? [...newRestaurant.schedule] : [];
+      this.moderatorsRaw = newRestaurant.moderators || [];
+      if (this.moderatorsRaw.length > 0) {
+        this.fetchModeratorEmails();
+      } else {
+        this.moderators = [];
+      }
+    },
+
     someInitMethod() {
       this.restaurantData = { ...this.restaurant };
       this.prepareLayout();
@@ -464,6 +485,10 @@ export default {
       this.restaurantData.tags = (this.restaurant.tags || [])
         .filter(t => t.tag && t.tag.name)
         .map(t => ({ id: t.id, name: t.tag.name }));
+
+      this.restaurantData.dressCode = (this.restaurant.dressCodes || [])
+        .map(dc => dc.dressCode)
+        .filter(Boolean);  
 
       this.restaurantData.dishes = (this.restaurant.dishes || []).map(dish => ({
         ...dish,
@@ -508,20 +533,17 @@ export default {
       }
 
       if (Array.isArray(parsedLayout) && parsedLayout.length && typeof parsedLayout[0] === 'object' && 'Floor' in parsedLayout[0]) {
-        // сгруппируем объекты по этажам
         const floorsMap = new Map();
         parsedLayout.forEach(item => {
           if (!floorsMap.has(item.Floor)) floorsMap.set(item.Floor, []);
           floorsMap.get(item.Floor).push(item);
         });
-        // Получаем массив этажей с объектами
         const floorsArray = Array.from(floorsMap.values());
         this.restaurantData = {
           ...this.restaurant,
           layout: floorsArray.map(floorData => this.convertLayoutToGrid(floorData))
         };
       } else if (Array.isArray(parsedLayout)) {
-        // если просто массив этажей
         this.restaurantData = {
           ...this.restaurant,
           layout: parsedLayout.map(floorData => this.convertLayoutToGrid(floorData))
@@ -539,7 +561,7 @@ export default {
   convertLayoutToGrid(layoutArray) {
     const grid = new Array(120).fill(null);
     layoutArray.forEach(item => {
-      const index = item.Y * 12 + item.X;  // Внимание на регистр — у тебя с большой буквы X и Y
+      const index = item.Y * 12 + item.X;  
       const element = this.getElementByTypeId(item.TypeId);
       grid[index] = {
         id: item.Id,
@@ -609,7 +631,6 @@ export default {
         return floorItems.reduce((acc, item, itemIndex) => {
           if (!item || typeof item !== 'object') return acc;
 
-          // Определяем typeId
           let typeId = 0;
 
           if (item.typeId !== undefined) {
@@ -617,19 +638,16 @@ export default {
           } else if (item.title && userTypeMapping[item.title]) {
             typeId = userTypeMapping[item.title];
           } else if (item.id !== undefined && item.id !== 0) {
-            // Если есть id, но нет typeId и title — можно задать дефолт или игнорировать
-            typeId = 1; // например, дефолт стенка
+            typeId = 1; 
           }
 
-          if (typeId === 0) return acc; // пропускаем пустые/неопределённые
+          if (typeId === 0) return acc; 
 
-          // Определяем floor
           const floor = item.floor !== undefined ? item.floor : floorNumber;
 
           const x = itemIndex % GRID_WIDTH;
           const y = Math.floor(itemIndex / GRID_WIDTH);
 
-          // Проверяем, если это стол (typeId 6..9), то задаём уникальный id
           const isTable = typeId >= 6 && typeId <= 9;
           const id = isTable ? tableIdCounter++ : 0;
 
@@ -669,59 +687,67 @@ export default {
     },
 
     addTag(event, type) {
-      let selectedId = '';
-      let optionsArray = [];
+      if (this.isModeratorMode) return;
 
-      if (type === 'cuisine') {
-        selectedId = this.selectedCuisineId;
-        optionsArray = this.cuisineOptions;
-      } else if (type === 'tags') {
-        selectedId = this.selectedTagId;
-        optionsArray = this.tagOptions;
-      } else if (type === 'dressCode') {
-        selectedId = this.selectedDressCodeId;
-        optionsArray = this.dressCodeOptions;
-      }
-
+      const selectedId = event.target.value;
       if (!selectedId) return;
 
-      const item = optionsArray.find(opt => opt.id === selectedId);
-      if (!item) return;
+      let selectedList = [];
+      if (type === 'dressCode') selectedList = this.dressCodeOptions;
+      if (type === 'cuisine') selectedList = this.cuisineOptions;
+      if (type === 'tags') selectedList = this.tagOptions;
 
-      if (!this.restaurantData[type]) {
-        this.restaurantData[type] = [];
+      const selectedItem = selectedList.find(item => item.id === selectedId);
+      if (!selectedItem) return;
+
+      if (!this.restaurantData[type].some(tag => tag.id === selectedId)) {
+        this.restaurantData[type].push(selectedItem);
       }
 
-      // Проверяем дубликаты по id
-      if (!this.restaurantData[type].some(t => t.id === selectedId)) {
-        this.restaurantData[type].push(item);
-      }
-
-      // Сброс выбранного id
+      if (type === 'dressCode') this.selectedDressCodeId = '';
       if (type === 'cuisine') this.selectedCuisineId = '';
-      else if (type === 'tags') this.selectedTagId = '';
-      else if (type === 'dressCode') this.selectedDressCodeId = '';
+      if (type === 'tags') this.selectedTagId = '';
     },
-    
+        
     removeTag(index, type) {
+      if (this.isModeratorMode) return;
+
       this.restaurantData[type].splice(index, 1);
     },
 
     async fetchModeratorEmails() {
-    const promises = this.moderatorsRaw.map(async (mod) => {
-      try {
-        const res = await fetch(`https://backend-restoran.onrender.com/api/Account/${mod.userId}`);
-        if (!res.ok) throw new Error('Ошибка запроса');
-        const userData = await res.json();
-        return { ...mod, email: userData.email }; 
-      } catch (e) {
-        console.error('Ошибка загрузки пользователя:', e);
-        return { ...mod, email: null };
-      }
-    });
-    this.moderators = await Promise.all(promises);
-  },
+      const promises = this.moderatorsRaw.map(async (mod) => {
+        const userId = mod.userId || mod.id || mod._id; 
+        if (!userId) {
+          console.warn('Не найден userId для модератора:', mod);
+          return { ...mod, email: null };
+        }
 
+        try {
+          const res = await fetch('https://backend-restoran.onrender.com/api/Account', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ UserId: userId }),
+          });
+
+          if (!res.ok) {
+            const errText = await res.text();
+            console.error('Ошибка ответа от сервера:', res.status, errText);
+            throw new Error('Ошибка запроса');
+          }
+
+          const userData = await res.json();
+          return { ...mod, email: userData.email || 'email не найден' };
+        } catch (e) {
+          console.error('Ошибка загрузки пользователя:', e);
+          return { ...mod, email: null };
+        }
+      });
+
+      this.moderators = await Promise.all(promises);
+    },
 
     async fetchOptions() {
       try {
@@ -730,7 +756,6 @@ export default {
 
         const data = await response.json();
 
-        // сохраняем опции с id и name
         this.dressCodeOptions = data.dressCodes.map(d => ({ id: d.id, name: d.name }));
         this.cuisineOptions = data.cuisines.map(c => ({ id: c.id, name: c.name }));
         this.tagOptions = data.tags.map(t => ({ id: t.id, name: t.name }));
@@ -747,41 +772,47 @@ export default {
     async updateRestaurant() {
       try {
         const token = localStorage.getItem('token');
+        if (!token) throw new Error('Отсутствует токен авторизации');
 
-  //  console.log('Исходный grid (layout):', this.restaurantData.layout);
-      const layout = this.convertLayout(this.restaurantData.layout);
-      console.log('Результат convertGridToLayout:', layout);
-
-        const moderatorEmails = this.restaurantData.managers?.map(m => m.email) || [];
-
+        const layout = this.convertLayout(this.restaurantData.layout);
+        const moderatorEmails = this.moderators.map(m => m.email) || [];
+        const tags = this.restaurantData.tags?.map(t => t.name || t) || [];
         const cuisine = this.restaurantData.cuisine?.map(c => c.name) || [];
+        const dressCode = this.restaurantData.dressCode?.map(d => d.name) || [];
 
-        // 4. Подготовить корректный payload
+
+        const dishes = (this.dishes || []).map(dish => ({
+          Name: dish.title || dish.name || '',  
+          Weight: dish.weight,
+          Price: dish.price,
+          Ingredients: dish.ingredients,
+          PhotoUrl: dish.image || dish.photoUrl || '',
+        }));
+
         const requestPayload = {
-          request: {
-            RestaurantId: this.restaurantData.id,
-            Name: this.restaurantData.name,
-            Description: this.restaurantData.description,
-            City: this.restaurantData.city,
-            Region: this.restaurantData.region,
-            Street: this.restaurantData.street,
-            Email: this.restaurantData.email,
-            PhotoUrl: this.restaurantData.photoUrl,
-            Organization: this.restaurantData.organization,
-            Latitude: this.restaurantData.latitude,
-            Longitude: this.restaurantData.longitude,
-            Cuisine: cuisine,
-            Tags: this.restaurantData.tags || [],
-            ModeratorEmails: moderatorEmails,
-            Dishes: this.restaurantData.dishes || [],
-            Layout: layout,
-            Schedule: this.restaurantData.schedule || []
-          }
+          RestaurantId: this.restaurantData.id,
+          Name: this.restaurantData.name,
+          Description: this.restaurantData.description,
+          City: this.restaurantData.city,
+          Region: this.restaurantData.region,
+          Street: this.restaurantData.street,
+          Email: this.restaurantData.email,
+          PhotoUrl: this.restaurantData.gallery?.[0] || '',
+          Gallery: this.restaurantData.gallery || [],
+          Organization: this.restaurantData.organization,
+          Latitude: this.restaurantData.latitude,
+          Longitude: this.restaurantData.longitude,
+          Cuisine: cuisine,
+          DressCode: dressCode,
+          Tags: tags,
+          ModeratorEmails: moderatorEmails,
+          Dishes: dishes,
+          Layout: layout,
+          Schedule: this.schedule || [],
+          HasParking: this.restaurantData.hasParking || false,
+          Accessible: this.restaurantData.accessible || false
         };
 
-        console.log('Финальные данные:', requestPayload);
-
-        // 5. Отправить запрос
         const response = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Editing', {
           method: 'POST',
           headers: {
@@ -791,29 +822,33 @@ export default {
           body: JSON.stringify(requestPayload),
         });
 
-        const result = await response.json();
+        const text = await response.text();
+
+        let result;
+        try {
+          result = text ? JSON.parse(text) : null;
+        } catch (e) {
+          console.warn('Не удалось распарсить JSON:', text);
+          result = null;
+        }
 
         if (!response.ok) {
-          console.error('Ошибка от сервера:', result);
+          console.error('Ошибка от сервера:', result || text);
           return;
         }
 
-        this.$emit('updated', this.restaurantData);
+      this.$emit('close');
+
       } catch (err) {
         console.error('Ошибка при сохранении:', err);
       }
     },
     
     handleSaveExtraSettings(updatedData) {
-      console.log("Получены данные:", updatedData);
-
-      // Явно обновляем поля по одному:
-      this.restaurant.city = updatedData.city;
-      this.restaurant.region = updatedData.region;
-      this.restaurant.street = updatedData.street;
-      this.restaurant.email = updatedData.email;
-      this.restaurant.organization = updatedData.organization;
-
+      this.restaurantData = {
+        ...this.restaurantData, 
+        ...updatedData          
+      };
       this.closeForm();
     },
 
@@ -835,40 +870,38 @@ export default {
     handleDeleteDish(dishId) {
       this.dishes = this.dishes.filter(d => d.id !== dishId);
     },
-    openAddManager() {
+    openAddModerator() {
       this.currentItem = null;
-      this.activeForm = 'manager';
+      this.activeForm = 'moderator';
     },
-    openEditManager(manager) {
-      this.currentItem = manager;
-      this.activeForm = 'manager';
-    },
-    handleDeleteManager(managerId) {
-      this.restaurantData.managers = this.restaurantData.managers.filter(m => m.id !== managerId);
+    openEditModerator(moderator) {
+      this.currentItem = moderator;
+      this.activeForm = 'moderator';
     },
 
-    handleFormSubmit(updatedManager) {
-      if (!this.restaurantData.managers) {
-        this.restaurantData.managers = [];
+    handleDeleteModerator(moderatorId) {
+      this.moderators = this.moderators.filter(m => m.id !== moderatorId);
+    },
+
+    handleModeratorFormSubmit(updatedModerator) {
+      if (!this.moderators) {
+        this.moderators = [];
       }
-
-      const index = this.restaurantData.managers.findIndex(
-        m => m.id === updatedManager.id
+      const index = this.moderators.findIndex(
+        m => m.id === updatedModerator.id
       );
-
       if (index !== -1) {
-        // Обновление существующего
-        this.restaurantData.managers[index] = {
-          ...this.restaurantData.managers[index],
-          ...updatedManager
+        this.moderators[index] = {
+          ...this.moderators[index],
+          ...updatedModerator
         };
       } else {
-        // Добавление нового — с уникальным id
-        this.restaurantData.managers.push({
-          ...updatedManager,
-          id: Date.now() // или другой способ сгенерировать id
+        this.moderators.push({
+          ...updatedModerator,
+          id: Date.now() 
         });
       }
+      this.moderators = [...this.moderators];
 
       this.closeForm();
     },
@@ -899,6 +932,8 @@ export default {
       this.closeForm();
     },
     addFloor() {
+        if (this.isModeratorMode) return;
+
         this.restaurantData.layout.push(Array(120).fill(null));
         this.activeFloorIndex = this.restaurantData.layout.length - 1;
     },
@@ -916,15 +951,15 @@ export default {
         }
     },
 
-    // Начало перетаскивания с панели (слева или снизу)
     onDragStart(el, event) {
+        if (this.isModeratorMode) return;
+
         this.draggedElement = { item: el };
         this.rotationDuringDrag = 0;
         this.previewX = event.clientX;
         this.previewY = event.clientY;
     },
 
-    // Начало перетаскивания уже размещённого элемента на сетке
     onGridItemDragStart(index) {
         this.draggedElement = {
         item: JSON.parse(JSON.stringify(this.gridElements[index])),
@@ -932,8 +967,9 @@ export default {
         };
     },
 
-    // Сброс на сетку
     onDrop(index) {
+        if (this.isModeratorMode) return;
+
         if (!this.draggedElement || !this.draggedElement.item) return;
 
         if (typeof this.draggedElement.index === 'number') {
@@ -952,8 +988,9 @@ export default {
         this.interactionMode = mode;
     },
 
-    // Обработка клика по элементу в сетке
     handleGridItemClick(index) {
+        if (this.isModeratorMode) return;
+
         const element = this.gridElements[index];
         if (!element) return;
 
@@ -1045,7 +1082,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden; /* или scroll, если хочешь прокрутку */
+  overflow: hidden; 
   border: 1px solid #ccc;
   border-radius: 8px;
   background-color: #f9f9f9;
@@ -1140,7 +1177,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 50px; /* Увеличил для лучшего отображения */
+  max-height: 50px;
   overflow-y: auto;
   padding-right: 8px;
   margin-top: 6px;
@@ -1325,8 +1362,8 @@ export default {
   font-size: 13px;
   width: fit-content;
   cursor: pointer;
-  margin-right: 0; /* Убрал горизонтальный отступ */
-  margin-bottom: 4px; /* Добавил вертикальный отступ */
+  margin-right: 0; 
+  margin-bottom: 4px; 
 }
 .tag.active {
   background-color: #FF6F61;

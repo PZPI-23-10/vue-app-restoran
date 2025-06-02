@@ -41,6 +41,16 @@
           </div>
         </div>
       </div>
+      
+      <button class="constructor-button" @click="isPreviewOpen = true">
+        Передивитися конструкт
+      </button>
+
+      <RestaurantLayoutPreview
+        v-if="isPreviewOpen"
+        :restaurant="restaurant"
+        @close="isPreviewOpen = false"
+      />
     </div>
 
   </div>
@@ -48,6 +58,9 @@
 
 <script setup>
 import { computed, ref, onMounted } from 'vue'
+import RestaurantLayoutPreview from '../components/RestaurantLayoutPreview.vue'
+
+const isPreviewOpen = ref(false)
 
 const props = defineProps({
   restaurant: {
@@ -107,6 +120,8 @@ function getStars(rating) {
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  flex-wrap: wrap;
+  padding-bottom: 60px;
 }
 
 .main-image {
@@ -241,4 +256,43 @@ h1 {
   font-size: 14px;
   color: #666;
 }
+
+.constructor-button {
+  background-color: #ff7a00;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease;
+}
+
+.constructor-button:hover {
+  background-color: #e86c00;
+}
+
+.constructor-button-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .constructor-button-wrapper {
+    justify-content: center;
+  }
+
+  .constructor-button {
+    width: 100%;
+    font-size: 13px;
+  }
+  
+    .top-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 </style>

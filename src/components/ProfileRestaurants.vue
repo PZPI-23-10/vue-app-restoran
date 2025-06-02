@@ -5,21 +5,21 @@
       <button @click="openCreateModal" class="create-btn">Створити ресторан</button>
     </div>
 
-    <div v-if="restaurants.length === 0" class="no-restaurants">
+    <div v-if="ownedRestaurants.length === 0 && moderatedRestaurants.length === 0" class="no-restaurants">
       <p>Немає жодних ресторанів</p>
     </div>
 
-    <div v-else class="restaurants-list">
+    <<div v-if="ownedRestaurants.length > 0" class="restaurants-list">
+      <h3>Мої ресторани як власник</h3>
       <div 
-        v-for="restaurant in restaurants" 
+        v-for="restaurant in ownedRestaurants" 
         :key="restaurant.id" 
         class="restaurant-item"
-        :class="{ moderator: restaurant.role === 'moderator' }"
       >
         <div class="restaurant-info">
           <img 
-            v-if="restaurant.photos && restaurant.photos.length > 0" 
-            :src="restaurant.photos[0]" 
+            v-if="restaurant.photoUrl !== 'https://via.placeholder.com/150?text=No+Image'" 
+            :src="restaurant.photoUrl" 
             @error="handleImageError"
             alt="Фото ресторану" 
             class="restaurant-photo"
@@ -37,12 +37,40 @@
         </div>
         <div class="restaurant-actions">
           <button @click="loadRestaurantDetails(restaurant.id)">Редагувати</button>
-          <button 
-            v-if="restaurant.role === 'owner'" 
-            @click="deleteRestaurant(restaurant.id)"
-          >
-            Видалити
-          </button>
+          <button @click="deleteRestaurant(restaurant.id)">Видалити</button>
+        </div>
+      </div>
+    </div>
+
+
+    <div v-if="moderatedRestaurants.length > 0" class="restaurants-list">
+      <h3>Мої ресторани як модератор</h3>
+      <div 
+        v-for="restaurant in moderatedRestaurants" 
+        :key="restaurant.id" 
+        class="restaurant-item moderator"
+      >
+        <div class="restaurant-info">
+          <img 
+             v-if="restaurant.photoUrl !== 'https://via.placeholder.com/150?text=No+Image'" 
+            :src="restaurant.photoUrl" 
+            @error="handleImageError"
+            alt="Фото ресторану" 
+            class="restaurant-photo"
+          />
+          <div v-else class="no-photo">
+            🍽️
+          </div>
+          <div class="restaurant-text">
+            <h3>{{ restaurant.name }}</h3>
+            <p v-if="restaurant.organization">{{ restaurant.organization }}</p>
+            <div class="tags">
+              <span v-for="tag in restaurant.tags || []" :key="tag" class="tag">{{ tag }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="restaurant-actions">
+          <button @click="onEditClick(restaurant)">Редагувати</button>
         </div>
       </div>
     </div>
@@ -50,8 +78,8 @@
     <RestaurantEdit 
       v-if="isEditMode" 
       :restaurant="restaurantToEdit" 
+      :isModerator="restaurantToEdit.role === 'moderator'"
       @close="closeEdit"
-      @save="editRestaurant"
     />
 
     <RestaurantInitModal
@@ -82,6 +110,16 @@ export default {
     }
   },
   methods: {
+  onEditClick(restaurant) {
+    let idToUse = restaurant.id;
+
+    if (restaurant.role === 'moderator' && restaurant.restaurantId) {
+      idToUse = restaurant.restaurantId;
+    }
+
+    this.loadRestaurantDetails(idToUse);
+  },
+
     openCreateModal() {
       this.showCreateModal = true
     },
@@ -90,30 +128,40 @@ export default {
     },
 
     async loadRestaurantDetails(restaurantId) {
-          try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Get', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`
-              },
-              body: JSON.stringify({ RestaurantId: restaurantId })
-            });
+      console.log(restaurantId)
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Get', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ RestaurantId: restaurantId })
+        });
 
-            if (!res.ok) {
-              const errorData = await res.json();
-              throw new Error(`Ошибка сервера: ${res.status} - ${JSON.stringify(errorData)}`);
-            }
+        if (!res.ok) {
+          const errorText = await res.text(); 
+          throw new Error(`Ошибка сервера: ${res.status} - ${errorText}`);
+        }
 
-            const data = await res.json();
-            console.log('Ответ сервера:', data);
-            this.restaurantToEdit = data;
-            this.isEditMode = true;
-          } catch (error) {
-            console.error('Не вдалося завантажити дані ресторану:', error);
-          }
-      },
+        const data = await res.json();
+        console.log(data)
+
+        let role = 'moderator'; 
+        if (this.ownedRestaurants.find(r => r.id === restaurantId)) {
+          role = 'owner';
+        } else if (this.moderatedRestaurants.find(r => r.id === restaurantId)) {
+          role = 'moderator';
+        }
+
+        console.log('Ответ сервера:', data);
+        this.restaurantToEdit = { ...data, role };
+        this.isEditMode = true;
+      } catch (error) {
+        console.error('Не вдалося завантажити дані ресторану:', error);
+      }
+    },
 
     isOwner(restaurant) {
         const userId = localStorage.getItem('userId');
@@ -124,46 +172,6 @@ export default {
         const email = localStorage.getItem('email');
         return (restaurant.moderatorEmails || []).includes(email);
     },
-
-  async editRestaurant(restaurant) {
-    try {
-      const token = localStorage.getItem('token');
-
-      const response = await axios.post(
-        'https://backend-restoran.onrender.com/api/Restaurant/Editing',
-        {
-          RestaurantId: restaurant.id,
-          Name: restaurant.name,
-          City: restaurant.city,
-          Region: restaurant.region,
-          Street: restaurant.street,
-          Description: restaurant.description,
-          Tags: restaurant.tags,
-          Cuisine: restaurant.cuisine,
-          PhotoUrl: restaurant.photoUrl,
-          Email: restaurant.email,
-          Layout: restaurant.layout,
-          Schedule: restaurant.schedule,
-          Dishes: restaurant.dishes,
-          Organization: restaurant.organization,
-          ModeratorEmails: restaurant.moderatorEmails
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      console.log('Успешно обновлено:', response.data);
-      // тут можно закрыть форму редактирования или обновить список ресторанов
-
-    } catch (error) {
-      console.error('Ошибка при сохранении данных ресторана:', error);
-      console.error('Ответ от сервера:', error.response?.data);
-    }
-  },
     
     handleRestaurantCreated(newRestaurant) {
       this.restaurants.push(newRestaurant)
@@ -182,7 +190,7 @@ export default {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
             },
-            data: { RestaurantId: restaurantId } // с большой буквы!
+            data: { RestaurantId: restaurantId }
         })
 
         this.restaurants = this.restaurants.filter(r => r.id !== restaurantId)
@@ -199,36 +207,44 @@ export default {
       this.selectedRestaurantId = null;
     },
   },
-  async mounted() {
-  const userId = localStorage.getItem('userId');
-  if (!userId) {
-    console.warn('userId отсутствует в localStorage');
-    return;
-  }
 
-  try {
-    const response = await axios.post(
-      'https://backend-restoran.onrender.com/api/Account',
-      { userId },
-      { headers: { 'Content-Type': 'application/json' } }
-    );
+    async mounted() {
+      const token = localStorage.getItem('token');
+      if (!token) return;
 
-    this.restaurants = (response.data.restaurantsOwned || []).map(restaurant => ({
-      ...restaurant,
-      role: 'owner',
-      photoUrl: restaurant.photoUrl || 'https://via.placeholder.com/150?text=No+Image'
-    }));
+      try {
+        const res = await axios.get(
+          'https://backend-restoran.onrender.com/api/Account/ManageableRestaurants',
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
 
-  } catch (error) {
-    console.error('Ошибка при загрузке ресторанов:', error);
-  }
-}
+        this.ownedRestaurants = (res.data.ownedRestasurants || []).map(r => ({
+          ...r,
+          photoUrl: r.photoUrl || 'https://via.placeholder.com/150?text=No+Image',
+          role: 'owner',
+        }));
+
+        this.moderatedRestaurants = (res.data.moderatedRestaurants || []).map(r => ({
+          ...r,
+          photoUrl: r.photoUrl || 'https://via.placeholder.com/150?text=No+Image',
+          role: 'moderator',
+        }));
+
+        this.restaurants = [...this.ownedRestaurants, ...this.moderatedRestaurants];
+
+        console.log('Загружены рестораны:', this.restaurants);
+      } catch (error) {
+        console.error("Помилка при завантаженні ресторанів:", error);
+      }
+    }
 }
 </script>
 
 <style scoped>
 .restaurant-item.moderator {
-  border-left: 4px solid #4caf50; /* зелёная полоса */
+  border-left: 4px solid #4caf50; 
 }
 .moderator-section h3 {
   margin-top: 24px;
@@ -237,7 +253,7 @@ export default {
 }
 
 .profile-restaurants {
-  max-width: 1000px; /* увеличили ширину */
+  max-width: 1000px; 
   margin: 0 auto;
   padding: 20px 30px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -251,7 +267,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
-  flex-wrap: wrap; /* чтобы кнопка не уходила с экрана */
+  flex-wrap: wrap; 
   gap: 15px;
 }
 
@@ -263,7 +279,7 @@ h2 {
 
 .create-btn {
   padding: 12px 24px;
-  background: linear-gradient(45deg, #ff6f00, #d84315); /* градиент оранжево-красный */
+  background: linear-gradient(45deg, #ff6f00, #d84315); 
   color: white;
   border: none;
   border-radius: 8px;
@@ -317,7 +333,7 @@ h2 {
   width: 100px;
   height: 100px;
   border-radius: 12px;
-  object-fit: contain; /* показываем полностью, без обрезки */
+  object-fit: contain; 
   background: #eee;
   padding: 6px;
   box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
@@ -358,8 +374,8 @@ h2 {
 }
 
 .tag {
-  background-color: #ffe0b2; /* светло-оранжевый */
-  color: #bf360c; /* темно-красный */
+  background-color: #ffe0b2; 
+  color: #bf360c; 
   padding: 4px 12px;
   border-radius: 16px;
   font-size: 13px;

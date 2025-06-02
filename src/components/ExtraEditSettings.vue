@@ -2,25 +2,33 @@
   <div class="modal-overlay" @click.self="close">
     <div class="modal-window">
       <h2>Редагування додаткових даних</h2>
-      <form @submit.prevent="save">
+      <form @submit.prevent="saveForm">
 
-        <label class="field-label">Область
+        <label class="field-label">
+          Область
           <input v-model="form.region" placeholder="Область" />
+          <div v-if="errors.region" class="error-text">{{ errors.region }}</div>
         </label>
 
-        <label class="field-label">Місто / Населений пункт
+        <label class="field-label">
+          Місто / Населений пункт
           <input v-model="form.city" placeholder="Місто" />
+          <div v-if="errors.city" class="error-text">{{ errors.city }}</div>
         </label>
 
-        <label class="field-label">Вулиця та № будинку
+        <label class="field-label">
+          Вулиця та № будинку
           <input v-model="form.street" placeholder="Вулиця" />
+          <div v-if="errors.street" class="error-text">{{ errors.street }}</div>
         </label>
 
-        <label class="field-label">Електронна пошта (необов'язково)
+        <label class="field-label">
+          Електронна пошта (необов'язково)
           <input v-model="form.email" placeholder="example@email.com" />
         </label>
 
-        <label class="field-label">Організація (необов'язково)
+        <label class="field-label">
+          Організація (необов'язково)
           <input v-model="form.organization" placeholder="Назва організації або залишити порожнім" />
         </label>
 
@@ -34,6 +42,8 @@
 </template>
 
 <script>
+import { geocodeAddress } from '../services/geocode'; 
+
 export default {
   name: "ExtraEditSettings",
 
@@ -52,7 +62,14 @@ export default {
         street: this.initialData.street || '',
         email: this.initialData.email || '',
         organization: this.initialData.organization || ''
-      }
+      },
+      errors: {
+        region: '',
+        city: '',
+        street: '',
+        addressError: '',
+      },
+      loadingCoords: false
     };
   },
 
@@ -60,9 +77,66 @@ export default {
     close() {
       this.$emit("close");
     },
-    save() {
-      this.$emit("save", { ...this.form });
-      this.close();
+
+    hasLetters(str) {
+      return /[а-яА-ЯіїєґІЇЄҐa-zA-Z]/.test(str.trim());
+    },
+
+    async saveForm() {
+      this.addressError = '';
+      this.errors.region = '';
+      this.errors.city = '';
+      this.errors.street = '';
+
+      if (!this.form.region.trim()) {
+        this.errors.region = 'Поле Область не може бути порожнім';
+      } else if (!this.hasLetters(this.form.region)) {
+        this.errors.region = 'Поле Область має містити літери';
+      }
+
+      if (!this.form.city.trim()) {
+        this.errors.city = 'Поле Місто не може бути порожнім';
+      } else if (!this.hasLetters(this.form.city)) {
+        this.errors.city = 'Поле Місто має містити літери';
+      }
+
+      if (!this.form.street.trim()) {
+        this.errors.street = 'Поле Вулиця не може бути порожнім';
+      } else if (!this.hasLetters(this.form.street)) {
+        this.errors.street = 'Поле Вулиця має містити літери';
+      }
+
+      if (this.errors.region || this.errors.city || this.errors.street) {
+        return;
+      }
+
+      this.loadingCoords = true;
+
+      try {
+        const coords = await geocodeAddress(this.form.region, this.form.city, this.form.street);
+        this.loadingCoords = false;
+
+      if (!coords) {
+        this.addressError = 'Не вдалося визначити координати. Перевірте адресу.';
+        return;
+      }
+
+        this.$emit('save', {
+          ...this.form
+          ,
+          Latitude: coords.latitude,
+          Longitude: coords.longitude,
+        });
+
+        this.close();
+      } catch (e) {
+        this.loadingCoords = false;
+        const errMsg = 'Помилка при визначенні координат. Спробуйте пізніше.';
+        this.errors.region = errMsg;
+        this.errors.city = errMsg;
+        this.errors.street = errMsg;
+        console.error(e);
+      }
     }
   }
 };
@@ -147,5 +221,11 @@ export default {
 
 .actions button[type="submit"]:hover {
   background-color: #43a047;
+}
+
+.error-text {
+  color: red;
+  font-size: 0.85em;
+  margin-top: 4px;
 }
 </style>
