@@ -5,37 +5,38 @@
         <button class="close-button" @click="$emit('close')">✕</button>
         <h2 class="modal-title">Реєстрація ресторану</h2>
 
-        <label class="field-label">Область
-          <input
-            v-model="region"
-            placeholder="Область"
-          />
+        <label class="field-label">
+          Область
+          <input v-model="region" placeholder="Область" />
+          <div v-if="errors.region" class="error-text">{{ errors.region }}</div>
         </label>
 
-        <label class="field-label">Місто / Населений пункт
-          <input
-            v-model="city"
-            placeholder="Місто"
-          />
+        <label class="field-label">
+          Місто / Населений пункт
+          <input v-model="city" placeholder="Місто" />
+          <div v-if="errors.city" class="error-text">{{ errors.city }}</div>
         </label>
 
-        <label class="field-label">Вулиця та № будинку
-          <input
-            v-model="street"
-            placeholder="Вулиця"
-          />
+        <label class="field-label">
+          Вулиця та № будинку
+          <input v-model="street" placeholder="Вулиця" />
+          <div v-if="errors.street" class="error-text">{{ errors.street }}</div>
         </label>
 
-        <label class="field-label">Електронна пошта (необов'язково)
+        <label class="field-label">
+          Електронна пошта (необов'язково)
           <input v-model="email" placeholder="example@email.com" />
         </label>
 
-        <label class="field-label">Організація (необов'язково)
+        <label class="field-label">
+          Організація (необов'язково)
           <input v-model="organization" placeholder="Назва організації або залишити порожнім" />
         </label>
 
         <div class="modal-actions">
-          <button class="continue-btn" @click="continueToConstructor">Далі ⇾</button>
+          <button class="continue-btn" @click="continueToConstructor" :disabled="loadingCoords">
+            Далі ⇾
+          </button>
         </div>
       </div>
     </div>
@@ -43,6 +44,8 @@
 </template>
 
 <script>
+import { geocodeAddress } from '../services/geocode'; 
+
 export default {
   emits: ['close'],
   props: {
@@ -68,29 +71,82 @@ export default {
         city: false,
         street: false
       },
+      loadingCoords: false,
     };
+    
   },
+  
+  computed: {
+    isAddressFilled() {
+      return this.region.trim() && this.city.trim() && this.street.trim();
+    }
+  },
+
   methods: {
-    continueToConstructor() {
-      this.submitted = true;
+    hasLetters(str) {
+      return /[a-zA-Zа-яА-Я]/.test(str);
+    },
 
-      const isRegionValid = this.region.trim() !== '';
-      const isCityValid = this.city.trim() !== '';
-      const isStreetValid = this.street.trim() !== '';
+    async continueToConstructor() {
+      this.errors.region = '';
+      this.errors.city = '';
+      this.errors.street = '';
 
-      if (!isRegionValid || !isCityValid || !isStreetValid) {
+      if (!this.region.trim()) {
+        this.errors.region = 'Поле Область не може бути порожнім';
+      } else if (!this.hasLetters(this.region)) {
+        this.errors.region = 'Поле Область має містити літери';
+      }
+
+      if (!this.city.trim()) {
+        this.errors.city = 'Поле Місто не може бути порожнім';
+      } else if (!this.hasLetters(this.city)) {
+        this.errors.city = 'Поле Місто має містити літери';
+      }
+
+      if (!this.street.trim()) {
+        this.errors.street = 'Поле Вулиця не може бути порожнім';
+      } else if (!this.hasLetters(this.street)) {
+        this.errors.street = 'Поле Вулиця має містити літери';
+      }
+
+      if (this.errors.region || this.errors.city || this.errors.street) {
         return;
       }
 
-      const address = `${this.region}, ${this.city}, ${this.street}`;
-      this.$router.push({
-        name: 'RestaurantCreate',
-        query: {
-          address,
-          email: this.email,
-          organization: this.organization
+      this.loadingCoords = true;
+
+      try {
+        const coords = await geocodeAddress(this.region, this.city, this.street);
+        this.loadingCoords = false;
+
+        if (!coords) {
+          const errMsg = 'Не вдалося визначити координати за цією адресою. Перевірте правильність.';
+          this.errors.region = errMsg;
+          this.errors.city = errMsg;
+          this.errors.street = errMsg;
+          return;
         }
-      });
+
+        const address = `${this.region}, ${this.city}, ${this.street}`;
+        this.$router.push({
+          name: 'RestaurantCreate',
+          query: {
+            address,
+            email: this.email,
+            organization: this.organization,
+            lat: coords.latitude,
+            lon: coords.longitude
+          }
+        });
+      } catch (e) {
+        this.loadingCoords = false;
+        const errMsg = 'Помилка при визначенні координат. Спробуйте пізніше.';
+        this.errors.region = errMsg;
+        this.errors.city = errMsg;
+        this.errors.street = errMsg;
+        console.error(e);
+      }
     }
   }
 }
@@ -192,6 +248,12 @@ export default {
   font-size: 15px;
   cursor: pointer;
   transition: background 0.2s ease;
+}
+
+.error-text {
+  color: red;
+  font-size: 0.85em;
+  margin-top: 4px;
 }
 
 .continue-btn:hover {

@@ -1,52 +1,53 @@
 <template>
-  <div class="restaurant-container">
-    <div class="top-section">
-      <div class="main-image">
-        <img :src="mainPhoto" alt="Фото ресторану" />
+  <div class="modal-overlay" @click.self="emitClose">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2>Конструктор ресторану: {{ restaurant.name }}</h2>
+        <button class="close-btn" @click="emitClose">×</button>
       </div>
 
-      <div class="info-container">
-        <div class="header-line">
-          <div class="title-rating">
-            <h1>{{ restaurant.name }}</h1>
-            <span class="stars">{{ getStars(averageRating) }}</span>
+      <div class="modal-body">
+        <div v-if="restaurantData.layout.length" class="restaurant-layout-container">
+          <div class="layout-wrapper">
+            <div class="restaurant-grid">
+              <div
+                v-for="(cell, index) in 120"
+                :key="index"
+                class="grid-cell"
+              >
+                <div v-if="restaurantData.layout[activeFloorIndex][index]" class="grid-item">
+                  <img
+                    :src="restaurantData.layout[activeFloorIndex][index].image"
+                    alt="Элемент планировки"
+                    class="placed-element"
+                    :style="{ transform: 'rotate(' + (restaurantData.layout[activeFloorIndex][index].rotation || 0) + 'deg)' }"
+                  />
+                </div>
+              </div>
+            </div>
+
+              <div class="floor-tabs">
+                <button
+                  v-for="(floor, index) in restaurantData.layout"
+                  :key="index"
+                  :class="{ active: index === activeFloorIndex }"
+                  @click="switchFloor(index)"
+                >
+                  Поверх {{ index + 1 }}
+                </button>
+              </div>
+            </div>
           </div>
-
-          <!-- Кнопка для открытия модалки -->
-          <button class="grid-button" @click="toggleGrid">
-            <span class="material-icons">grid_view</span>
-          </button>
-        </div>
-
-        <p class="description">{{ restaurant.description }}</p>
-
-        <div class="meta-block">
-          <div class="left-meta">
-            <div class="meta-title">Кухня</div>
-            <div>{{ cuisineList }}</div>
-          </div>
-
-          <div class="right-meta">
-            <div class="meta-title">Теги</div>
-            <div>{{ tagList }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Модальное окно для отображения плана -->
-    <div class="modal-overlay" v-if="showLayoutPreview" @click.self="closeLayoutPreview">
-      <div class="modal-content">
-        <button class="close-button" @click="closeLayoutPreview">×</button>
-        <RestaurantLayoutPreview :layout="restaurant.layout" />
+        <div v-else>
+        <p>Планування ресторану відсутнє.</p>
       </div>
     </div>
   </div>
+</div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import RestaurantLayoutPreview from './RestaurantLayoutPreview.vue'
+import { ref, watch, onMounted } from 'vue'
 
 const props = defineProps({
   restaurant: {
@@ -55,172 +56,226 @@ const props = defineProps({
   }
 })
 
-const showLayoutPreview = ref(false)
+const emit = defineEmits(['close'])
 
-function toggleGrid() {
-  showLayoutPreview.value = true
+function emitClose() {
+  emit('close')
 }
 
-function closeLayoutPreview() {
-  showLayoutPreview.value = false
-}
+const restaurantData = ref({
+  layout: []
+})
+const activeFloorIndex = ref(0)
 
-const mainPhoto = computed(() => {
-  if (props.restaurant?.gallery?.length > 0) {
-    return props.restaurant.gallery[0]
+function prepareLayout() {
+  if (!props.restaurant) return
+
+  let parsedLayout
+
+  try {
+    if (typeof props.restaurant.layout === 'string') {
+      parsedLayout = JSON.parse(props.restaurant.layout)
+    } else {
+      parsedLayout = props.restaurant.layout
+    }
+  } catch (e) {
+    console.error('Ошибка парсинга layout:', e)
+    parsedLayout = []
   }
-  return '/images/default_restaurant.jpg'
-})
 
-const cuisineList = computed(() =>
-  props.restaurant?.cuisine?.map(c => c.name).join(', ') || 'Не вказано'
-)
+  if (
+    Array.isArray(parsedLayout) &&
+    parsedLayout.length &&
+    typeof parsedLayout[0] === 'object' &&
+    'Floor' in parsedLayout[0]
+  ) {
+    const floorsMap = new Map()
+    parsedLayout.forEach(item => {
+      if (!floorsMap.has(item.Floor)) floorsMap.set(item.Floor, [])
+      floorsMap.get(item.Floor).push(item)
+    })
 
-const tagList = computed(() =>
-  props.restaurant?.tags?.map(t => t.name).join(', ') || '—'
-)
-
-const averageRating = computed(() => {
-  const reviews = props.restaurant?.reviews ?? []
-  if (reviews.length === 0) return 0
-  const total = reviews.reduce((sum, review) => sum + (review.rating ?? 0), 0)
-  return total / reviews.length
-})
-
-function getStars(rating) {
-  const rounded = Math.round(rating)
-  const full = '★'.repeat(rounded)
-  const empty = '☆'.repeat(5 - rounded)
-  return full + empty
+    const floorsArray = Array.from(floorsMap.values())
+    restaurantData.value = {
+      layout: floorsArray.map(floorData => convertLayoutToGrid(floorData))
+    }
+  } else if (Array.isArray(parsedLayout)) {
+    restaurantData.value = {
+      layout: parsedLayout.map(floorData => convertLayoutToGrid(floorData))
+    }
+  } else {
+    restaurantData.value = {
+      layout: [Array(120).fill(null)]
+    }
+  }
+  activeFloorIndex.value = 0
 }
+
+function convertLayoutToGrid(layoutArray) {
+  const grid = new Array(120).fill(null)
+  layoutArray.forEach(item => {
+    const index = item.Y * 12 + item.X
+    const element = getElementByTypeId(item.TypeId)
+    grid[index] = {
+      id: item.Id,
+      typeId: item.TypeId,
+      image: element?.image || '',
+      rotation: item.Rotation,
+      floor: item.Floor
+    }
+  })
+  return grid
+}
+
+const allElements = [
+  { id: 1, title: 'Пряма стіна', image: '/images/wall.png' },
+  { id: 2, title: 'Окружність', image: '/images/circle.png' },
+  { id: 3, title: 'Стіна "Трикутник"', image: '/images/triangle.png' },
+  { id: 4, title: 'Двері', image: '/images/door.png' },
+  { id: 5, title: 'Вікна', image: '/images/window.png' },
+  { id: 6, title: 'Місце на двох', image: '/images/tableForTwo.png' },
+  { id: 7, title: 'Місце на багатьох', image: '/images/tableForMany.png' },
+  { id: 8, title: 'Столи з диваном/кріслом', image: '/images/tableWithSofa.png' },
+  { id: 9, title: 'Барна стійка', image: '/images/bar.png' },
+  { id: 10, title: 'Сходи', image: '/images/stairs.png' }
+]
+
+function getElementByTypeId(typeId) {
+  return allElements.find(el => el.id === typeId) || { image: '/images/placeholder.png' }
+}
+
+function switchFloor(index) {
+  activeFloorIndex.value = index
+}
+
+onMounted(() => {
+  prepareLayout()
+})
+
+watch(() => props.restaurant, () => {
+  prepareLayout()
+})
 </script>
 
 <style scoped>
-.restaurant-container {
-  padding: 30px;
-  font-family: 'Arial', sans-serif;
-}
 
-.top-section {
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
   display: flex;
-  gap: 30px;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
 }
 
-.main-image {
-  width: 500px;
-  height: 350px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #ccc;
-}
-
-.main-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.info-container {
-  flex: 1;
+.modal-window {
+  background: #fff;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 900px;
+  padding: 24px;
+  position: relative;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  max-height: 90vh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
 }
 
-.header-line {
+.modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 16px;
 }
 
-.title-rating {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-h1 {
-  font-size: 32px;
+.modal-header h2 {
   margin: 0;
+  font-size: 22px;
+  flex: 1;
+  text-align: center;
 }
 
-.stars {
-  font-size: 26px;
-  color: #ffc107;
-}
-
-.grid-button {
-  background-color: #00bcd4;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 12px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.grid-button:hover {
-  background-color: #0097a7;
-}
-
-.material-icons {
-  font-size: 24px;
-  color: white;
-}
-
-.description {
-  font-size: 16px;
-  line-height: 1.5;
-  max-width: 600px;
-}
-
-.meta-block {
-  display: flex;
-  gap: 100px;
-}
-
-.left-meta, .right-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.meta-title {
-  font-weight: bold;
-  font-size: 18px;
-}
-
-/* Модалка */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 10px;
-  padding: 20px;
-  width: 800px;
-  max-width: 90%;
-  position: relative;
-}
-
-.close-button {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  font-size: 26px;
+.close-btn {
   background: none;
   border: none;
+  font-size: 28px;
   cursor: pointer;
+  color: #666;
+  line-height: 1;
+}
+
+.modal-body {
+  flex: 1;
+}
+
+.restaurant-layout-container {
+  display: flex;
+  justify-content: center; 
+  width: 100%;
+}
+
+.restaurant-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-gap: 0; 
+  width: 100%; 
+  max-width: 720px; 
+  aspect-ratio: 12 / 10; 
+}
+
+.grid-cell {
+  border: 1px solid #ccc; 
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  position: relative;
+  width: 100%;
+  height: 60px; 
+}
+
+.grid-item {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.grid-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.floor-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap; 
+  justify-content: center;
+}
+
+.floor-tabs button {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+
+.floor-tabs button.active {
+  background: #ff6600;
+  color: white;
+  border-color: #ff6600;
+}
+
+.layout-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px; 
+  width: 100%;
 }
 </style>
