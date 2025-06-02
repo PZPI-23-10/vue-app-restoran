@@ -9,7 +9,10 @@ import GoogleAuthCallback from '../components/GoogleAuthCallback.vue'
 import ProfileUser from '../components/ProfileUser.vue'
 import ProfileFavoriteDishes from '../components/ProfileFavoriteDishes.vue'
 import ProfileReservations from '../components/ProfileReservations.vue'
-import ProfileRestaurants from '../components/ProfileRestaurants.vue' 
+import ProfileRestaurants from '../components/ProfileRestaurants.vue'
+import ProfileModeration from '../components/ProfileModeration.vue'
+import ChatPage from '../components/ChatPage.vue'
+
 
 const routes = [
   {
@@ -28,32 +31,20 @@ const routes = [
       { path: 'info', component: ProfileUser },
       { path: 'favorites', component: ProfileFavoriteDishes },
       { path: 'reservations', component: ProfileReservations },
-      { path: 'restaurants', component: ProfileRestaurants}
+      { path: 'restaurants', component: ProfileRestaurants },
+      { path: 'moderation', component: ProfileModeration }
     ]
   },
 
+    {
+      path: '/chat/:sessionId',
+      component: ChatPage
+    },
   { path: '/', component: Home },
-  {
-    path: '/restaurants/:city?',
-    name: 'RestaurantPageList',
-    component: RestaurantPageList,
-    props: true
-  },
-  {
-    path: '/create-restaurant',
-    name: 'RestaurantCreate',
-    component: RestaurantCreate
-  },
-  {
-    path: '/restaurant/:id',
-    name: 'RestaurantPage',
-    component: RestaurantPage,
-    props: true
-  },
-  {
-    path: '/google-auth-callback',
-    component: GoogleAuthCallback
-  }
+  { path: '/restaurants/:city?', name: 'RestaurantPageList', component: RestaurantPageList, props: true },
+  { path: '/create-restaurant', name: 'RestaurantCreate', component: RestaurantCreate },
+  { path: '/restaurant/:id', name: 'RestaurantPage', component: RestaurantPage, props: true },
+  { path: '/google-auth-callback', component: GoogleAuthCallback }
 ]
 
 const router = createRouter({

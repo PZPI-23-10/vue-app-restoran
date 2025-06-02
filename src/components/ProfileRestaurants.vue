@@ -9,19 +9,19 @@
       <p>Немає жодних ресторанів</p>
     </div>
 
-    <<div v-if="ownedRestaurants.length > 0" class="restaurants-list">
+    <div v-if="ownedRestaurants.length > 0" class="restaurants-list">
       <h3>Мої ресторани як власник</h3>
-      <div 
-        v-for="restaurant in ownedRestaurants" 
-        :key="restaurant.id" 
+      <div
+        v-for="restaurant in ownedRestaurants"
+        :key="restaurant.id"
         class="restaurant-item"
       >
         <div class="restaurant-info">
-          <img 
-            v-if="restaurant.photoUrl !== 'https://via.placeholder.com/150?text=No+Image'" 
-            :src="restaurant.photoUrl" 
+          <img
+            v-if="restaurant.photoUrl !== 'https://via.placeholder.com/150?text=No+Image'"
+            :src="restaurant.photoUrl"
             @error="handleImageError"
-            alt="Фото ресторану" 
+            alt="Фото ресторану"
             class="restaurant-photo"
           />
           <div v-else class="no-photo">
@@ -45,17 +45,17 @@
 
     <div v-if="moderatedRestaurants.length > 0" class="restaurants-list">
       <h3>Мої ресторани як модератор</h3>
-      <div 
-        v-for="restaurant in moderatedRestaurants" 
-        :key="restaurant.id" 
+      <div
+        v-for="restaurant in moderatedRestaurants"
+        :key="restaurant.id"
         class="restaurant-item moderator"
       >
         <div class="restaurant-info">
-          <img 
-             v-if="restaurant.photoUrl !== 'https://via.placeholder.com/150?text=No+Image'" 
-            :src="restaurant.photoUrl" 
+          <img
+             v-if="restaurant.photoUrl !== 'https://via.placeholder.com/150?text=No+Image'"
+            :src="restaurant.photoUrl"
             @error="handleImageError"
-            alt="Фото ресторану" 
+            alt="Фото ресторану"
             class="restaurant-photo"
           />
           <div v-else class="no-photo">
@@ -74,10 +74,10 @@
         </div>
       </div>
     </div>
-    
-    <RestaurantEdit 
-      v-if="isEditMode" 
-      :restaurant="restaurantToEdit" 
+
+    <RestaurantEdit
+      v-if="isEditMode"
+      :restaurant="restaurantToEdit"
       :isModerator="restaurantToEdit.role === 'moderator'"
       @close="closeEdit"
     />
@@ -141,14 +141,14 @@ export default {
         });
 
         if (!res.ok) {
-          const errorText = await res.text(); 
+          const errorText = await res.text();
           throw new Error(`Ошибка сервера: ${res.status} - ${errorText}`);
         }
 
         const data = await res.json();
         console.log(data)
 
-        let role = 'moderator'; 
+        let role = 'moderator';
         if (this.ownedRestaurants.find(r => r.id === restaurantId)) {
           role = 'owner';
         } else if (this.moderatedRestaurants.find(r => r.id === restaurantId)) {
@@ -172,7 +172,7 @@ export default {
         const email = localStorage.getItem('email');
         return (restaurant.moderatorEmails || []).includes(email);
     },
-    
+
     handleRestaurantCreated(newRestaurant) {
       this.restaurants.push(newRestaurant)
     },
@@ -244,7 +244,7 @@ export default {
 
 <style scoped>
 .restaurant-item.moderator {
-  border-left: 4px solid #4caf50; 
+  border-left: 4px solid #4caf50;
 }
 .moderator-section h3 {
   margin-top: 24px;
@@ -253,7 +253,7 @@ export default {
 }
 
 .profile-restaurants {
-  max-width: 1000px; 
+  max-width: 1000px;
   margin: 0 auto;
   padding: 20px 30px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -267,7 +267,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
-  flex-wrap: wrap; 
+  flex-wrap: wrap;
   gap: 15px;
 }
 
@@ -279,7 +279,7 @@ h2 {
 
 .create-btn {
   padding: 12px 24px;
-  background: linear-gradient(45deg, #ff6f00, #d84315); 
+  background: linear-gradient(45deg, #ff6f00, #d84315);
   color: white;
   border: none;
   border-radius: 8px;
@@ -333,7 +333,7 @@ h2 {
   width: 100px;
   height: 100px;
   border-radius: 12px;
-  object-fit: contain; 
+  object-fit: contain;
   background: #eee;
   padding: 6px;
   box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
@@ -374,8 +374,8 @@ h2 {
 }
 
 .tag {
-  background-color: #ffe0b2; 
-  color: #bf360c; 
+  background-color: #ffe0b2;
+  color: #bf360c;
   padding: 4px 12px;
   border-radius: 16px;
   font-size: 13px;
@@ -432,24 +432,24 @@ h2 {
     padding: 20px 15px;
     max-width: 95vw;
   }
-  
+
   .restaurant-item {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .restaurant-info {
     flex: none;
     width: 100%;
     margin-bottom: 12px;
   }
-  
+
   .restaurant-actions {
     width: 100%;
     justify-content: flex-start;
     gap: 10px;
   }
-  
+
   .restaurant-actions button {
     min-width: 45%;
   }
