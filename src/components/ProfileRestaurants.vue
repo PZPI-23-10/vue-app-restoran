@@ -9,19 +9,19 @@
       <p>Немає жодних ресторанів</p>
     </div>
 
-    <<div v-if="ownedRestaurants.length > 0" class="restaurants-list">
+    <div v-if="ownedRestaurants.length > 0" class="restaurants-list">
       <h3>Мої ресторани як власник</h3>
-      <div 
-        v-for="restaurant in ownedRestaurants" 
-        :key="restaurant.id" 
+      <div
+        v-for="restaurant in ownedRestaurants"
+        :key="restaurant.id"
         class="restaurant-item"
       >
         <div class="restaurant-info">
-          <img 
-            v-if="restaurant.photoUrl !== 'https://via.placeholder.com/150?text=No+Image'" 
-            :src="restaurant.photoUrl" 
+          <img
+            v-if="restaurant.photoUrl !== 'https://via.placeholder.com/150?text=No+Image'"
+            :src="restaurant.photoUrl"
             @error="handleImageError"
-            alt="Фото ресторану" 
+            alt="Фото ресторану"
             class="restaurant-photo"
           />
           <div v-else class="no-photo">
@@ -45,17 +45,17 @@
 
     <div v-if="moderatedRestaurants.length > 0" class="restaurants-list">
       <h3>Мої ресторани як модератор</h3>
-      <div 
-        v-for="restaurant in moderatedRestaurants" 
-        :key="restaurant.id" 
+      <div
+        v-for="restaurant in moderatedRestaurants"
+        :key="restaurant.id"
         class="restaurant-item moderator"
       >
         <div class="restaurant-info">
-          <img 
-             v-if="restaurant.photoUrl !== 'https://via.placeholder.com/150?text=No+Image'" 
-            :src="restaurant.photoUrl" 
+          <img
+             v-if="restaurant.photoUrl !== 'https://via.placeholder.com/150?text=No+Image'"
+            :src="restaurant.photoUrl"
             @error="handleImageError"
-            alt="Фото ресторану" 
+            alt="Фото ресторану"
             class="restaurant-photo"
           />
           <div v-else class="no-photo">
@@ -74,10 +74,10 @@
         </div>
       </div>
     </div>
-    
-    <RestaurantEdit 
-      v-if="isEditMode" 
-      :restaurant="restaurantToEdit" 
+
+    <RestaurantEdit
+      v-if="isEditMode"
+      :restaurant="restaurantToEdit"
       :mode="modeToPass"
       @close="closeEdit"
     />
@@ -95,6 +95,8 @@ import axios from 'axios'
 import RestaurantInitModal from './RestaurantInitModal.vue'
 import RestaurantCreate from '../views/RestaurantCreate.vue'
 import RestaurantEdit from './RestaurantEdit.vue'
+import Toast from './Toast.vue'
+import { showToast } from '../services/toast.js'
 
 export default {
   name: 'ProfileRestaurants',
@@ -114,7 +116,38 @@ export default {
       return this.restaurantToEdit?.role || '';
     }
   },
-  methods: {
+  methods: {async loadRestaurants() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await axios.get(
+        'https://backend-restoran.onrender.com/api/Account/ManageableRestaurants',
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      this.ownedRestaurants = (res.data.ownedRestasurants || []).map(r => ({
+        ...r,
+        photoUrl: r.photoUrl || 'https://via.placeholder.com/150?text=No+Image',
+        role: 'owner',
+      }));
+
+      this.moderatedRestaurants = (res.data.moderatedRestaurants || []).map(r => ({
+        ...r,
+        photoUrl: r.photoUrl || 'https://via.placeholder.com/150?text=No+Image',
+        role: 'moderator',
+      }));
+
+      this.restaurants = [...this.ownedRestaurants, ...this.moderatedRestaurants];
+
+      console.log('Загружены рестораны:', this.restaurants);
+    } catch (error) {
+      console.error("Помилка при завантаженні ресторанів:", error);
+    }
+  },
+
   onEditClick(restaurant) {
     let idToUse = restaurant.id;
 
@@ -146,14 +179,14 @@ export default {
         });
 
         if (!res.ok) {
-          const errorText = await res.text(); 
+          const errorText = await res.text();
           throw new Error(`Ошибка сервера: ${res.status} - ${errorText}`);
         }
 
         const data = await res.json();
         console.log(data)
 
-        let role = 'moderator'; 
+        let role = 'moderator';
         if (this.ownedRestaurants.find(r => r.id === restaurantId)) {
           role = 'owner';
         } else if (this.moderatedRestaurants.find(r => r.id === restaurantId)) {
@@ -177,35 +210,35 @@ export default {
         const email = localStorage.getItem('email');
         return (restaurant.moderatorEmails || []).includes(email);
     },
-    
+
     handleRestaurantCreated(newRestaurant) {
       this.restaurants.push(newRestaurant)
     },
 
     async deleteRestaurant(restaurantId) {
-        try {
-        const token = localStorage.getItem('token')
-        if (!token) throw new Error('Токен не знайдено')
-        if (!restaurantId) throw new Error('ID ресторану не знайдено')
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Токен не знайдено');
+      if (!restaurantId) throw new Error('ID ресторану не знайдено');
 
-        await axios.request({
-            method: 'DELETE',
-            url: 'https://backend-restoran.onrender.com/api/Restaurant',
-            headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-            },
-            data: { RestaurantId: restaurantId }
-        })
+      await axios.request({
+        method: 'DELETE',
+        url: 'https://backend-restoran.onrender.com/api/Restaurant',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        data: { RestaurantId: restaurantId }
+      });
 
-        this.restaurants = this.restaurants.filter(r => r.id !== restaurantId)
-        alert('Ресторан успішно видалено')
+      await this.loadRestaurants(); // Загружаем список после удаления
 
-        } catch (error) {
-        console.error('Помилка видалення:', error)
-        alert('Помилка видалення: ' + (error.response?.data?.title || error.message))
-        }
-    },
+      showToast('Ресторан успішно видалено', 'success');
+    } catch (error) {
+      console.error('Помилка видалення:', error);
+      showToast('Помилка видалення: ' + (error.response?.data?.title || error.message), error);
+    }
+  },
 
     closeEdit() {
       this.isEditMode = false;
@@ -249,7 +282,7 @@ export default {
 
 <style scoped>
 .restaurant-item.moderator {
-  border-left: 4px solid #4caf50; 
+  border-left: 4px solid #4caf50;
 }
 .moderator-section h3 {
   margin-top: 24px;
@@ -258,7 +291,7 @@ export default {
 }
 
 .profile-restaurants {
-  max-width: 1000px; 
+  max-width: 1000px;
   margin: 0 auto;
   padding: 20px 30px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -272,7 +305,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
-  flex-wrap: wrap; 
+  flex-wrap: wrap;
   gap: 15px;
 }
 
@@ -284,7 +317,7 @@ h2 {
 
 .create-btn {
   padding: 12px 24px;
-  background: linear-gradient(45deg, #ff6f00, #d84315); 
+  background: linear-gradient(45deg, #ff6f00, #d84315);
   color: white;
   border: none;
   border-radius: 8px;
@@ -338,7 +371,7 @@ h2 {
   width: 100px;
   height: 100px;
   border-radius: 12px;
-  object-fit: contain; 
+  object-fit: contain;
   background: #eee;
   padding: 6px;
   box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
@@ -379,8 +412,8 @@ h2 {
 }
 
 .tag {
-  background-color: #ffe0b2; 
-  color: #bf360c; 
+  background-color: #ffe0b2;
+  color: #bf360c;
   padding: 4px 12px;
   border-radius: 16px;
   font-size: 13px;
@@ -437,24 +470,24 @@ h2 {
     padding: 20px 15px;
     max-width: 95vw;
   }
-  
+
   .restaurant-item {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .restaurant-info {
     flex: none;
     width: 100%;
     margin-bottom: 12px;
   }
-  
+
   .restaurant-actions {
     width: 100%;
     justify-content: flex-start;
     gap: 10px;
   }
-  
+
   .restaurant-actions button {
     min-width: 45%;
   }

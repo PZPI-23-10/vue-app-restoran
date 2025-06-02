@@ -3,9 +3,9 @@
     <h2>Модерація чатів</h2>
 
     <div v-if="sessions.length">
-      <div v-for="session in sessions" :key="session.id" class="session-item">
+      <div v-for="session in sessions" :key="session.sessionId" class="session-item">
         <div>{{ session.userEmail }}</div>
-        <button @click="openChat(session.id)">Відкрити чат</button>
+        <button @click="openChat(session.sessionId)">Відкрити чат</button>
       </div>
     </div>
 
@@ -25,7 +25,12 @@ const router = useRouter()
 
 onMounted(async () => {
   try {
-    sessions.value = await ChatService.getActiveSessions()
+    await ChatService.startConnection();  // Подключаемся к SignalR
+
+    const moderatorSessions = await ChatService.connection.invoke('GetModeratorChatSessions')
+    console.log('Отримані чати:', moderatorSessions)
+    sessions.value = moderatorSessions
+
   } catch (e) {
     console.error('Помилка при завантаженні сесій:', e)
   }

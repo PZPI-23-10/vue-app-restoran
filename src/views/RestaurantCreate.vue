@@ -91,8 +91,8 @@
             <option v-for="c in cuisineOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
           </select>
           <div class="selected-tags">
-            <span 
-              v-for="(tag, index) in restaurantData.cuisine" 
+            <span
+              v-for="(tag, index) in restaurantData.cuisine"
               :key="tag.id"
               class="tag selected"
               @click="removeTag(index, 'cuisine')"
@@ -109,8 +109,8 @@
               <option v-for="t in tagOptions" :key="t.id" :value="t.id">{{ t.name }}</option>
             </select>
             <div class="selected-tags">
-              <span 
-                v-for="(tag, index) in restaurantData.tags" 
+              <span
+                v-for="(tag, index) in restaurantData.tags"
                 :key="tag.id"
                 class="tag selected"
                 @click="removeTag(index, 'tags')"
@@ -123,7 +123,7 @@
       </div>
     </div>
     </div>
-    
+
 
     <div class="middle-buttons">
       <button @click="openDishesList" class="view-btn">
@@ -135,9 +135,9 @@
         👨‍🍳 Переглянути модераторів
       </button>
     </div>
-     
+
     <transition name="fade-slide">
-    <DishesList 
+    <DishesList
       v-if="activeForm === 'dishes'"
       :visible="true"
       :dishes="dishes"
@@ -153,7 +153,7 @@
       v-if="activeForm === 'managers'"
       :visible="true"
       :managers="restaurantData.managers"
-      @close="closeForm"      
+      @close="closeForm"
       @add="openAddManager"
       @edit="openEditManager"
       @delete="handleDeleteManager"
@@ -197,9 +197,9 @@
         <div class="elements-left">
           <h3>Межі ресторану</h3>
           <div class="elements-vertical">
-            <div 
-              class="element-btn-vertical" 
-              v-for="el in leftElements" 
+            <div
+              class="element-btn-vertical"
+              v-for="el in leftElements"
               :key="el.id"
               draggable="true"
               @dragstart="(event) => onDragStart(el, event)"
@@ -254,25 +254,25 @@
           <div class="elements-bottom">
             <h3>Конструктор</h3>
               <div class="mode-buttons">
-                <button 
+                <button
                   :class="['mode-btn', { active: interactionMode === 'default', green: interactionMode === 'default' }]"
                   @click="setInteractionMode('default')"
                 >Переміщення</button>
 
-                <button 
+                <button
                   :class="['mode-btn', { active: interactionMode === 'rotate', blue: interactionMode === 'rotate' }]"
                   @click="setInteractionMode('rotate')"
                 >Поворот</button>
 
-                <button 
+                <button
                   :class="['mode-btn', { active: interactionMode === 'delete', red: interactionMode === 'delete' }]"
                   @click="setInteractionMode('delete')"
                 >Видалення</button>
               </div>
             <div class="elements-horizontal">
-            <div 
-              class="element-btn-horizontal" 
-              v-for="el in bottomElements" 
+            <div
+              class="element-btn-horizontal"
+              v-for="el in bottomElements"
               :key="el.id"
               draggable="true"
               @dragstart="(event) => onDragStart(el, event)"
@@ -289,7 +289,7 @@
     <button class="cancel-btn" @click="showConfirm = true">Скасувати</button>
 
     <transition name="fade-slide">
-    <ConfirmCancelModal 
+    <ConfirmCancelModal
       v-if="showConfirm"
       title="Скасувати створення ресторану?"
       message="Всі введені дані буде втрачено. Продовжити?"
@@ -299,7 +299,7 @@
       @close="showConfirm = false"
     />
     </transition>
-  
+
     <button class="publish-btn" @click="createRestaurant">Опублікувати</button>
     </div>
   </div>
@@ -336,9 +336,9 @@ export default {
         description: '',
         photoUrl: '',
         gallery: Array(4).fill(""),
-        dressCode: [], 
+        dressCode: [],
         hasParking: false, // 🚗
-        accessible: false, // ♿ 
+        accessible: false, // ♿
         cuisine: [],
         tags: [],
         layout: [Array.from({ length: 120 }, () => null)],
@@ -346,10 +346,10 @@ export default {
         moderatorEmails: [],
         schedule: [],
         street: '',
-        city: '',        
-        region: '',        
+        city: '',
+        region: '',
         email: '',
-        organization: '',    
+        organization: '',
       },
       showConfirm: false,
       dressCodeOptions: [],
@@ -384,7 +384,7 @@ export default {
       ],
     }
   },
-  
+
   computed: {
     gridElements() {
       return this.restaurantData.layout[this.activeFloorIndex];
@@ -432,7 +432,7 @@ export default {
 
     handleDeleteManager(id) {
       this.restaurantData.managers = this.restaurantData.managers.filter(manager => manager.id !== id);
-      localStorage.setItem('restaurant_workers', JSON.stringify(this.restaurantData.managers));  
+      localStorage.setItem('restaurant_workers', JSON.stringify(this.restaurantData.managers));
     },
 
     openAddManager() {
@@ -459,7 +459,7 @@ export default {
     handleGalleryChange(event) {
       const file = event.target.files[0];
       if (!file) return;
-      
+
       const reader = new FileReader();
       reader.onload = (e) => {
         this.restaurantData.gallery[this.activeIndex] = e.target.result;
@@ -483,7 +483,7 @@ export default {
     handleScheduleSave(schedule) {
       this.restaurantData.schedule = schedule;
     },
-    
+
     handleFormSubmit(manager) {
       if (!manager || !manager.email) {
         console.warn('Не передана почта менеджера');
@@ -545,7 +545,7 @@ export default {
       } else {
         this.dishes = JSON.parse(localStorage.getItem('restaurant_dishes'));
       }
-      
+
       if (!localStorage.getItem('restaurant_workers')) {
         localStorage.setItem('restaurant_workers', JSON.stringify([
           {
@@ -583,7 +583,7 @@ export default {
     openAddWorkHours() {
       this.activeForm = 'hours';
     },
-        
+
     addFloor() {
       this.restaurantData.layout.push(Array(120).fill(null));
       this.activeFloorIndex = this.restaurantData.layout.length - 1;
@@ -601,7 +601,7 @@ export default {
         this.activeFloorIndex = index;
       }
     },
-    
+
     setInteractionMode(mode) {
       this.interactionMode = mode;
     },
@@ -639,7 +639,7 @@ addTag(event, field) {
         index,
       };
     },
-    
+
     saveDish(dishData) {
       if (this.currentDish) {
         const updated = this.restaurantData.dishes.map(d =>
@@ -681,7 +681,7 @@ addTag(event, field) {
       this.previewX = event.clientX;
       this.previewY = event.clientY;
     },
-    
+
     handleGridItemClick(index) {
       const element = this.gridElements[index];
       if (!element) return;
@@ -726,7 +726,7 @@ addTag(event, field) {
 
         const data = await response.json();
 
-        this.dressCodeOptions = data.dressCodes; 
+        this.dressCodeOptions = data.dressCodes;
         this.cuisineOptions = data.cuisines;
         this.tagOptions = data.tags;
 
@@ -774,7 +774,7 @@ addTag(event, field) {
         console.error('Ошибка при удалении блюда:', error);
       }
     },
-          
+
   convertLayout(layoutByFloors) {
     if (!Array.isArray(layoutByFloors)) return [];
 
@@ -812,7 +812,7 @@ addTag(event, field) {
       }, []);
     });
 
-    return result.flat(); 
+    return result.flat();
   },
 
     async createRestaurant() {
@@ -887,13 +887,13 @@ addTag(event, field) {
           Gallery: this.restaurantData.gallery.filter(img => img),
           Schedule: this.restaurantData.schedule,
           ModeratorEmails: this.restaurantData.moderatorEmails,
-          Tags: this.restaurantData.tags.map(t => t.name),           
-          Cuisine: this.restaurantData.cuisine.map(c => c.name),     
-          DressCode: this.restaurantData.dressCode.map(d => d.name), 
+          Tags: this.restaurantData.tags.map(t => t.name),
+          Cuisine: this.restaurantData.cuisine.map(c => c.name),
+          DressCode: this.restaurantData.dressCode.map(d => d.name),
           Dishes: this.restaurantData.dishes,
           PhotoUrl: firstImage || '',
           Latitude: coords?.latitude || 0,
-          Longitude: coords?.longitude || 0           
+          Longitude: coords?.longitude || 0
         };
         console.log('Отправляемые данные:', payload);
 
@@ -929,7 +929,7 @@ addTag(event, field) {
       cancelCreation() {
       localStorage.removeItem('restaurant_dishes');
       localStorage.removeItem('restaurant_workers');
- 
+
       this.restaurantData = {
         name: '',
         description: '',
@@ -940,11 +940,11 @@ addTag(event, field) {
         dishes: [],
         moderatorEmails: [],
         street: '',
-        city: '',        
-        region: '',        
+        city: '',
+        region: '',
         email: '',
         organization: '',
-        schedule: []    
+        schedule: []
       };
 
       this.$router.back();
@@ -1009,7 +1009,7 @@ addTag(event, field) {
 .preview-image {
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain; 
+  object-fit: contain;
 }
 
 .photo-placeholder {
@@ -1070,15 +1070,15 @@ addTag(event, field) {
   min-width: 300px;
 }
 
-/* === Input'ы === */
 .name-input,
 .description-input {
   width: 100%;
   margin-bottom: 12px;
-  padding: 12px;
+  padding: 20px; /* было 12px, стало 20px */
   border: 1px solid #ccc;
   border-radius: 6px;
 }
+
 
 /* === Секция dress-кода === */
 .dress-code-row {
@@ -1159,12 +1159,12 @@ addTag(event, field) {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  max-height: 31px; 
-  overflow-y: auto; 
+  max-height: 31px;
+  overflow-y: auto;
   padding: 6px;
   background: #fafafa;
   margin-top: 8px;
-  white-space: normal; 
+  white-space: normal;
   scrollbar-width: thin;
 }
 .dress-code-section .selected-tags::-webkit-scrollbar {
