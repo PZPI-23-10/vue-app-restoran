@@ -40,17 +40,52 @@
             <div>{{ tagList }}</div>
           </div>
         </div>
+
+       <div class="extra-info">
+        <div class="info-item">
+          <img src="/icons/dress-code.png" alt="Дресс-код" class="info-icon" />
+          <div>
+            <div class="info-title">Дрес-код</div>
+            <div>{{ restaurant.dressCode?.name || 'Не вказано' }}</div>
+          </div>
+        </div>
+
+        <div class="info-item">
+          <img src="/icons/parking.png" alt="Парковка" class="info-icon" />
+          <div>
+            <div class="info-title">Паркінг</div>
+            <div class="status-icon">
+              <span v-if="restaurant.hasParking" class="check">✔</span>
+              <span v-else class="cross">✖</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-item">
+          <img src="/icons/accessibility.png" alt="Доступність" class="info-icon" />
+          <div>
+            <div class="info-title">Доступність</div>
+            <div class="status-icon">
+              <span v-if="restaurant.hasAccessibility" class="check">✔</span>
+              <span v-else class="cross">✖</span>
+            </div>
+          </div>
+        </div>
+</div>
+
       </div>
       
       <button class="constructor-button" @click="isPreviewOpen = true">
         Передивитися конструкт
       </button>
 
+      <transition name="fade-slide">
       <RestaurantLayoutPreview
         v-if="isPreviewOpen"
         :restaurant="restaurant"
         @close="isPreviewOpen = false"
       />
+      </transition>
     </div>
 
   </div>
@@ -279,6 +314,46 @@ h1 {
   margin-top: 20px;
 }
 
+.extra-info {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+  color: #333;
+}
+
+.info-icon {
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+}
+
+.info-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.status-icon {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.check {
+  color: green;
+}
+
+.cross {
+  color: red;
+}
+
 @media (max-width: 768px) {
   .constructor-button-wrapper {
     justify-content: center;
@@ -295,4 +370,11 @@ h1 {
   }
 }
 
+.fade-slide-enter-active, .fade-slide-leave-active {
+  transition: all 0.3s ease;
+}
+.fade-slide-enter-from, .fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
 </style>

@@ -122,10 +122,9 @@ export default {
       }
 
         this.$emit('save', {
-          ...this.form
-          ,
-          Latitude: coords.latitude,
-          Longitude: coords.longitude,
+          ...this.form,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
         });
 
         this.close();

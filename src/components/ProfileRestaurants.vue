@@ -78,7 +78,7 @@
     <RestaurantEdit 
       v-if="isEditMode" 
       :restaurant="restaurantToEdit" 
-      :isModerator="restaurantToEdit.role === 'moderator'"
+      :mode="modeToPass"
       @close="closeEdit"
     />
 
@@ -107,6 +107,11 @@ export default {
     isEditMode: false,
     showCreateModal: false,
     restaurantToEdit: null,
+    }
+  },
+  computed: {
+    modeToPass() {
+      return this.restaurantToEdit?.role || '';
     }
   },
   methods: {

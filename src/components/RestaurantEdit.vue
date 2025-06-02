@@ -67,7 +67,7 @@
           <div class="dress-code-row">
             <div class="tag-select">
               <label>Дресс-код</label>
-              <select @change="addTag($event, 'dressCode')" v-model="selectedDressCodeId">
+              <select @change="addTag($event, 'dressCode')" v-model="selectedDressCodeId" v-if="!isModeratorMode">
                 <option value="">Оберіть варіант</option>
                 <option v-for="d in dressCodeOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
               </select>
@@ -99,7 +99,7 @@
         <div class="tags-wrapper">
           <div class="tag-select">
               <label>Кухня</label>
-              <select @change="addTag($event, 'cuisine')" v-model="selectedCuisineId">
+              <select @change="addTag($event, 'cuisine')" v-model="selectedCuisineId" v-if="!isModeratorMode">
                 <option value="">Оберіть кухню</option>
                 <option v-for="c in cuisineOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
               </select>
@@ -117,7 +117,7 @@
 
           <div class="tag-select">
             <label>Теги</label>
-            <select @change="addTag($event, 'tags')" v-model="selectedTagId">
+            <select @change="addTag($event, 'tags')" v-model="selectedTagId" v-if="!isModeratorMode">
               <option value="">Оберіть тег</option>
               <option v-for="t in tagOptions" :key="t.id" :value="t.id">{{ t.name }}</option>
             </select>
@@ -219,7 +219,7 @@
       <div class="elements-layout">
         <div class="elements-left">
           <h3>Межі ресторану</h3>
-          <div class="elements-vertical">
+          <div class="elements-vertical" v-if="!isModeratorMode">
             <div 
               class="element-btn-vertical" 
               v-for="el in leftElements" 
@@ -342,9 +342,9 @@ export default {
   },
   computed: {
   isModeratorMode() {
-    return this.isModerator;
+    return this.mode === 'moderator';
   },
-
+  
   gridElements() {
     if (!this.restaurantData || !this.restaurantData.layout) return null;
     return this.restaurantData.layout[this.activeFloorIndex];
@@ -378,7 +378,7 @@ export default {
         type: Object,
         required: true
     },
-    isModerator: Boolean,
+    mode: String
   },
   data() {
     return {
@@ -429,6 +429,7 @@ export default {
   },
 
   mounted() {
+    console.log('Режим (mode):', this.mode);
     this.fetchModeratorEmails();
     this.fetchOptions();
     this.syncGalleryFromPhotos(); 
@@ -812,7 +813,7 @@ export default {
           HasParking: this.restaurantData.hasParking || false,
           Accessible: this.restaurantData.accessible || false
         };
-
+        console.log(requestPayload)
         const response = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Editing', {
           method: 'POST',
           headers: {
@@ -845,9 +846,10 @@ export default {
     },
     
     handleSaveExtraSettings(updatedData) {
+      console.log('Обновленные данные с координатами:', updatedData);
       this.restaurantData = {
-        ...this.restaurantData, 
-        ...updatedData          
+        ...this.restaurantData,
+        ...updatedData
       };
       this.closeForm();
     },
