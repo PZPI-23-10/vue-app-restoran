@@ -15,7 +15,7 @@
         <div class="gallery-container">
           <button class="gallery-arrow left" @click.stop="prevPhoto">&lt;</button>
 
-          <div class="gallery-frame" @click="!isModeratorMode && handleSlotClick">
+          <div class="gallery-frame" @click="handleSlotClick">
             <img
               v-if="restaurantData.gallery && restaurantData.gallery[activeIndex]"
               :src="restaurantData.gallery[activeIndex]"
