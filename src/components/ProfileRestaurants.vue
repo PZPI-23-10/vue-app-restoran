@@ -70,7 +70,7 @@
           </div>
         </div>
         <div class="restaurant-actions">
-          <button @click="loadRestaurantDetails(restaurant.id)">Редагувати</button>
+          <button @click="onEditClick(restaurant)">Редагувати</button>
         </div>
       </div>
     </div>
@@ -78,7 +78,7 @@
     <RestaurantEdit 
       v-if="isEditMode" 
       :restaurant="restaurantToEdit" 
-      :mode="restaurantToEdit.role"
+      :isModerator="restaurantToEdit.role === 'moderator'"
       @close="closeEdit"
     />
 
@@ -110,6 +110,16 @@ export default {
     }
   },
   methods: {
+  onEditClick(restaurant) {
+    let idToUse = restaurant.id;
+
+    if (restaurant.role === 'moderator' && restaurant.restaurantId) {
+      idToUse = restaurant.restaurantId;
+    }
+
+    this.loadRestaurantDetails(idToUse);
+  },
+
     openCreateModal() {
       this.showCreateModal = true
     },
@@ -199,35 +209,36 @@ export default {
   },
 
     async mounted() {
-  const token = localStorage.getItem('token');
-  if (!token) return;
+      const token = localStorage.getItem('token');
+      if (!token) return;
 
-  try {
-    const res = await axios.get(
-      'https://backend-restoran.onrender.com/api/Account/ManageableRestaurants',
-      {
-        headers: { Authorization: `Bearer ${token}` }
+      try {
+        const res = await axios.get(
+          'https://backend-restoran.onrender.com/api/Account/ManageableRestaurants',
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+        this.ownedRestaurants = (res.data.ownedRestasurants || []).map(r => ({
+          ...r,
+          photoUrl: r.photoUrl || 'https://via.placeholder.com/150?text=No+Image',
+          role: 'owner',
+        }));
+
+        this.moderatedRestaurants = (res.data.moderatedRestaurants || []).map(r => ({
+          ...r,
+          photoUrl: r.photoUrl || 'https://via.placeholder.com/150?text=No+Image',
+          role: 'moderator',
+        }));
+
+        this.restaurants = [...this.ownedRestaurants, ...this.moderatedRestaurants];
+
+        console.log('Загружены рестораны:', this.restaurants);
+      } catch (error) {
+        console.error("Помилка при завантаженні ресторанів:", error);
       }
-      
-    );
-
-    this.ownedRestaurants = (res.data.ownedRestasurants || []).map(r => ({
-      ...r,
-      photoUrl: r.photoUrl || 'https://via.placeholder.com/150?text=No+Image',
-      role: 'owner',
-    }));
-
-    this.moderatedRestaurants = (res.data.moderatedRestaurants || []).map(r => ({
-      ...r,
-      photoUrl: r.photoUrl || 'https://via.placeholder.com/150?text=No+Image',
-      role: 'moderator',
-    }));
-
-    this.restaurants = [...this.ownedRestaurants, ...this.moderatedRestaurants];
-  } catch (error) {
-    console.error("Помилка при завантаженні ресторанів:", error);
-  }
-}
+    }
 }
 </script>
 

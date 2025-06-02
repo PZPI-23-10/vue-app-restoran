@@ -342,7 +342,7 @@ export default {
   },
   computed: {
   isModeratorMode() {
-    return this.mode === 'moderator';
+    return this.isModerator;
   },
 
   gridElements() {
@@ -378,10 +378,7 @@ export default {
         type: Object,
         required: true
     },
-      mode: {
-        type: String,
-        default: 'owner'  
-    }
+    isModerator: Boolean,
   },
   data() {
     return {
