@@ -1,12 +1,14 @@
 <template>
   <div class="dishes-list">
-    <div v-if="dishes.length > 0">
+    <div v-if="dishes.length > 0" class="grid">
       <div v-for="dish in dishes" :key="dish.id" class="dish-card">
-        <img :src="dish.photoUrl" alt="Фото блюда" />
         <div class="dish-info">
           <div class="dish-title">{{ dish.title }}</div>
           <div class="dish-desc">{{ dish.ingredients }}</div>
           <div class="dish-meta">{{ dish.weight }} г • {{ dish.price }} грн</div>
+        </div>
+        <div class="dish-image-wrapper">
+          <img :src="dish.photoUrl" alt="Фото блюда" />
         </div>
       </div>
     </div>
@@ -22,51 +24,71 @@ const props = defineProps({
 
 <style scoped>
 .dishes-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
   width: 100%;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 16px;
 }
 
 .dish-card {
   display: flex;
-  gap: 15px;
+  justify-content: space-between;
   background: #fff;
   border-radius: 10px;
-  padding: 10px 15px;
-  box-shadow: 0 0 4px rgba(0,0,0,0.1);
-  align-items: center;
-  width: 100%;
-  max-width: 400px;
+  padding: 12px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);
+  height: 150px;
+  transition: transform 0.2s;
 }
 
-.dish-card img {
-  width: 90px;
-  height: 90px;
-  object-fit: cover;
-  border-radius: 8px;
-  flex-shrink: 0;
+.dish-card:hover {
+  transform: scale(1.015);
 }
 
 .dish-info {
-  flex: 1;
+  flex: 2;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  justify-content: space-between;
+  padding-right: 10px;
 }
 
 .dish-title {
   font-weight: bold;
-  font-size: 18px;
+  font-size: 16px;
+  margin-bottom: 6px;
 }
 
 .dish-desc {
   color: #555;
-  font-size: 14px;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* максимум 2 строки */
+  -webkit-box-orient: vertical;
 }
 
 .dish-meta {
-  font-size: 14px;
+  font-size: 12px;
   color: #333;
+  margin-top: 6px;
+}
+
+.dish-image-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dish-image-wrapper img {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 8px;
 }
 </style>

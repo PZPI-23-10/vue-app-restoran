@@ -1,4 +1,4 @@
-// services/cityService.js
+
 
 export function getCityCoordinates(cityName, restaurants) {
   for (const restaurant of restaurants) {

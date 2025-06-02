@@ -1,10 +1,10 @@
 <template>
   <div class="restaurant-page-content">
-    <FilterButtons />
+    <FilterButtons :onTagsChange="handleTagsChange" />
 
     <div class="restaurant-page-container">
-      <div class="restaurant-list">
-        <RestaurantList :restaurants="visibleRestaurants" />
+      <div class="restaurant-list"><RestaurantList :restaurants="filteredRestaurants" />
+
       </div>
 
       <div class="restaurant-map">
@@ -37,22 +37,35 @@ export default {
   },
   data() {
     return {
-      visibleRestaurants: []
+      visibleRestaurants: [],
+      selectedTags: []  // выбранные теги
     }
   },
   computed: {
     currentCity() {
       return this.city || 'Київ'
+    },
+    filteredRestaurants() {
+      if (this.selectedTags.length === 0) {
+        return this.visibleRestaurants
+      }
+
+      return this.visibleRestaurants.filter(restaurant => {
+        const restaurantTags = restaurant.tags.map(t => t.tag?.name)
+        return this.selectedTags.every(tag => restaurantTags.includes(tag))
+      })
     }
   },
   methods: {
     handleVisibleRestaurants(restaurants) {
       this.visibleRestaurants = restaurants
+    },
+    handleTagsChange(tags) {
+      this.selectedTags = tags
     }
   }
 }
 </script>
-
 
 <style scoped>
 .restaurant-page-content {

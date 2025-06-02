@@ -21,8 +21,7 @@
 
       <button class="login-button" @click="handleLogin">Увійти</button>
 
-      <!-- Google кнопка -->
-      <div id="google-signin" class="google-button"></div>
+      <GoogleLogin :callback="handleGoogleLogin" />
 
       <div class="links">
         <span class="link" @click="$emit('forgot')">Забули пароль?</span>
@@ -33,7 +32,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref } from 'vue'
+import axios from 'axios'
+import { GoogleLogin } from 'vue3-google-login'
+import { showToast } from '../services/toast.js'
+
+showToast('Помилка входу', 'error')
+
 
 const props = defineProps({
   visible: Boolean,
@@ -54,7 +59,6 @@ function togglePassword() {
 function handleBackdropClick() {
   emit('close')
 }
-
 async function handleLogin() {
   try {
     const response = await fetch('https://backend-restoran.onrender.com/api/Account/Login', {
@@ -80,64 +84,52 @@ async function handleLogin() {
 
     console.log('Успішний вхід:', data)
 
-    localStorage.setItem('token', data.accessToken)
-    localStorage.setItem('userId', data.userId)
-    localStorage.setItem('isAuthenticated', 'true')
-    localStorage.setItem('email', email.value)
-    window.dispatchEvent(new Event('storage'))
+    saveAuthData(data)
+
     emit('close')
   } catch (error) {
     console.error('Помилка входу:', error)
-    alert(error.message)
+    showToast(error.message, 'error')
   }
 }
 
-onMounted(async () => {
-  await nextTick() // гарантируем, что DOM готов
-  const observer = new MutationObserver(() => {
-    if (document.getElementById("google-signin") && window.google?.accounts?.id) {
-      observer.disconnect()
+const handleGoogleLogin = async (response) => {
+  const googleToken = response.credential;
+  console.log("Google token:", googleToken)
 
-      google.accounts.id.initialize({
-        client_id: '144739779523-nnu4avrae8mavp9vhlbdhvihractabar.apps.googleusercontent.com',
-        callback: handleGoogleResponse
-      })
+  try {
+    const result = await axios.post('https://backend-restoran.onrender.com/api/Account/web/google', {
+      googleToken: googleToken,
+      rememberMe: true
+    })
 
-      google.accounts.id.renderButton(
-        document.getElementById("google-signin"),
-        {
-          theme: "outline",
-          size: "large",
-          text: "continue_with",
-          locale: "uk"
-        }
-      )
-    }
-  })
+    console.log('Google login result:', result.data)
 
-  observer.observe(document.body, { childList: true, subtree: true })
-})
+    saveAuthData(result.data)
 
-function handleGoogleResponse(response) {
-  const idToken = response.credential
-  console.log("Отримали ID Token: ", idToken)
+    window.location.href = '/'
+  } catch (error) {
+    console.error('Помилка входу через Google:', error)
 
-  // Здесь можно отправить idToken на сервер
-  localStorage.setItem('idToken', idToken)
+showToast('Помилка входу', 'error')
+  }
+}
+
+function saveAuthData(data) {
+  localStorage.setItem('token', data.accessToken)
+  localStorage.setItem('userId', data.userId)
+
+  if (data.email) {
+    localStorage.setItem('email', data.email)
+  }
+
   localStorage.setItem('isAuthenticated', 'true')
   window.dispatchEvent(new Event('storage'))
-  emit('close')
 }
+
 </script>
 
 <style scoped>
-.google-button {
-  margin-top: 12px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -164,24 +156,6 @@ function handleGoogleResponse(response) {
   box-sizing: border-box;
 }
 
-.password-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.toggle-password {
-  position: absolute;
-  right: 8px;
-  background: none;
-  border: none;
-  color: #007bff;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 4px;
-}
-
 .title {
   text-align: center;
   margin-bottom: 16px;
@@ -201,6 +175,24 @@ function handleGoogleResponse(response) {
   border-radius: 6px;
   font-size: 15px;
   box-sizing: border-box;
+}
+
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 4px;
 }
 
 .remember-me {
@@ -245,4 +237,31 @@ function handleGoogleResponse(response) {
   cursor: pointer;
   font-size: 15px;
 }
+.custom-google-btn {
+  margin-top: 16px;
+  width: 100%;
+  height: 48px;
+  border: 1px solid #dadce0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-weight: 500;
+  font-size: 16px;
+  color: #3c4043;
+  background-color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.custom-google-btn:hover {
+  background-color: #f7f7f7;
+}
+
+.custom-google-btn img {
+  width: 22px;
+  height: 22px;
+}
+
 </style>

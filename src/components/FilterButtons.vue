@@ -1,30 +1,18 @@
 <template>
   <div class="filter-buttons-container">
-    <div class="filter-buttons">
-     <button
-        class="filter-btn favorites"
-        @click="toggleDropdown"
-        >
-        Обрані
-        <span class="material-icons arrow" :class="{ rotated: dropdownOpen }">expand_more</span>
-        </button>
-
-      <div class="separator"></div>
-
-      <div class="filter-tags">
-        <button
-          v-for="(category, index) in categories"
-          :key="index"
-          :class="['filter-btn', { selected: selectedCategory === category }]"
-          @click="selectCategory(category)"
-        >
-          {{ category }}
-        </button>
-      </div>
-    </div>
-
-    <div v-if="dropdownOpen" class="dropdown-menu">
-      <button @click="selectCategory('Обрані')">Обрані</button>
+    <div
+      class="slider-wrapper"
+      ref="scrollContainer"
+      @wheel="handleWheel"
+    >
+      <button
+        v-for="(tag, index) in tags"
+        :key="tag.id"
+        :class="['filter-btn', { selected: selectedTags.includes(tag.name) }]"
+        @click="selectTag(tag.name)"
+      >
+        {{ tag.name }}
+      </button>
     </div>
 
     <div class="bottom-line"></div>
@@ -32,32 +20,44 @@
 </template>
 
 <script>
+import axios from 'axios'
+
 export default {
   name: 'FilterButtons',
+  props: ['onTagsChange'],
   data() {
     return {
-      selectedCategory: 'Обрані', // Начальная категория
-      dropdownOpen: false, // Состояние для выпадающего списка
-      categories: [
-        'Італійська',
-        'Мексиканська',
-        'Морепродукти',
-        'Вегетаріанська',
-        'Японська',
-        'Суші',
-        'Піцца'
-      ]
-    };
+      tags: [],
+      selectedTags: []
+    }
+  },
+  mounted() {
+    this.loadTags()
   },
   methods: {
-    toggleDropdown() {
-      this.dropdownOpen = !this.dropdownOpen; // Открытие/закрытие выпадающего списка
+    async loadTags() {
+      try {
+        const response = await axios.get('https://backend-restoran.onrender.com/api/tag')
+        let tagsData = response.data.tags
+        this.tags = tagsData.sort(() => Math.random() - 0.5)
+      } catch (error) {
+        console.error('Помилка при завантаженні тегів:', error)
+      }
     },
-    selectCategory(category) {
-      this.selectedCategory = category; // Обновление выбранной категории
+    selectTag(tag) {
+      if (this.selectedTags.includes(tag)) {
+        this.selectedTags = this.selectedTags.filter(t => t !== tag)
+      } else {
+        this.selectedTags.push(tag)
+      }
+      this.onTagsChange(this.selectedTags)
+    },
+    handleWheel(event) {
+      const container = this.$refs.scrollContainer
+      container.scrollLeft += event.deltaY
     }
   }
-};
+}
 </script>
 
 <style scoped>
@@ -65,14 +65,23 @@ export default {
   width: 100%;
   margin-top: 20px;
   box-sizing: border-box;
+  position: relative;
 }
 
-.filter-buttons {
+.slider-wrapper {
   display: flex;
   gap: 10px;
-  align-items: center;
-  margin-left: 20px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 10px 20px;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox */
 }
+
+.slider-wrapper::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
 .filter-btn {
   border: 1px solid black;
   border-radius: 12px;
@@ -82,73 +91,18 @@ export default {
   font-size: 14px;
   white-space: nowrap;
   transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center; /* Центровка текста и стрелки */
-  min-width: 100px; /* 👈 Задаёт минимальную ширину */
-  box-sizing: border-box;
+  flex-shrink: 0;
 }
-
 
 .filter-btn.selected {
   border: 1.5px solid #f55;
   color: #f55;
 }
-.filter-btn.favorites {
-  min-width: 100px;
-  margin-right: 10px;
-}
 
-.separator {
-  width: 1px;
-  height: 30px;
-  background-color: black;
-}
-
-.filter-tags {
-  display: flex;
-  gap: 10px;
-  margin-left: 10px;
-}
-
-.arrow {
-  margin-left: 5px;
-  font-size: 18px; /* Уменьшаем размер стрелки */
-  transition: transform 0.3s ease;
-}
-
-.arrow.rotated {
-  transform: rotate(180deg); /* Поворот стрелки */
-}
-
-.dropdown-menu {
-  position: absolute;
-  background-color: white;
-  border: 1px solid black;
-  border-radius: 8px;
-  margin-top: 5px;
-  width: 120px;
-  z-index: 10;
-}
-
-.dropdown-menu button {
-  width: 100%;
-  padding: 8px;
-  border: none;
-  background-color: white;
-  text-align: left;
-  cursor: pointer;
-}
-
-.dropdown-menu button:hover {
-  background-color: #f0f0f0;
-}
-
-/* Линия, которая идет на всю ширину */
 .bottom-line {
   width: 100%;
   height: 1px;
-  background-color: black; /* Линия */
-  margin-top: 20px;
+  background-color: black;
+  margin-top: 10px;
 }
 </style>

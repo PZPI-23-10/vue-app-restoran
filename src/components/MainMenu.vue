@@ -3,8 +3,7 @@
     <div class="left-side">
       <router-link to="/" class="logo-text">Сервіс для ресторанів</router-link>
       <div class="divider"></div>
-    <LocationDropdown @citySelected="handleCitySelected" />
-
+      <LocationDropdown @citySelected="handleCitySelected" />
     </div>
 
     <div class="right-buttons">
@@ -21,8 +20,6 @@
 
         <div v-if="menuOpen" class="dropdown-menu" @click.stop>
           <router-link to="/profile/info" class="dropdown-item">Профіль</router-link>
-
-
           <button @click="logout" class="dropdown-item">Вийти</button>
         </div>
       </div>
@@ -56,8 +53,12 @@ export default {
       showRegister: false,
       showForgot: false,
       isAuthenticated: localStorage.getItem('isAuthenticated') === 'true',
-      userEmail: localStorage.getItem('email') || 'Акаунт',
       menuOpen: false
+    }
+  },
+  computed: {
+    userEmail() {
+      return localStorage.getItem('email') || 'Акаунт'
     }
   },
   mounted() {
@@ -95,22 +96,17 @@ export default {
     },
     syncAuth() {
       this.isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
-      this.userEmail = localStorage.getItem('email') || 'Акаунт'
+      // userEmail теперь обновляется сам по computed
     },
     handleCitySelected(city) {
-    this.$emit('citySelected', city)
-    this.$router.push({ name: 'RestaurantPageList', params: { city } })
-  },
+      this.$emit('citySelected', city)
+      this.$router.push({ name: 'RestaurantPageList', params: { city } })
+    },
     handleOutsideClick(event) {
       const menu = this.$el.querySelector('.dropdown-menu')
       const button = this.$el.querySelector('.profile-btn')
 
-      if (
-        this.menuOpen &&
-        menu &&
-        !menu.contains(event.target) &&
-        !button.contains(event.target)
-      ) {
+      if (this.menuOpen && menu && !menu.contains(event.target) && !button.contains(event.target)) {
         this.menuOpen = false
       }
     }

@@ -63,6 +63,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import TermsModal from './TermsModal.vue'
+import { showToast } from '../services/toast.js'
 
 defineProps({
   visible: Boolean,
@@ -139,8 +140,9 @@ async function handleRegister() {
       return
     }
 
-    emit('close')
-    alert('Реєстрація успішна! Тепер увійдіть.')
+emit('close')
+showToast('Реєстрація успішна! Тепер увійдіть.', 'success')
+
   } catch (error) {
     errorMessage.value = error.message || 'Сталася непередбачувана помилка.'
     console.error(error)

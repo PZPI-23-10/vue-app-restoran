@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, nextTick } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { getRestaurants } from '../services/restaurantService'
@@ -31,16 +31,18 @@ function getCoordsByCity(cityName) {
       return cityCoords[region][cityName]
     }
   }
-  return null
+  return [50.4501, 30.5234] // дефолт Киев
 }
 
 onMounted(async () => {
+  await nextTick()
+
   const data = await getRestaurants(true)
   allRestaurants.value = data
 
-  const startCoords = getCoordsByCity(props.selectedCity) || [50.4501, 30.5234]
+  const startCoords = getCoordsByCity(props.selectedCity)
 
-  map.value = L.map(mapContainer.value, { zoomControl: false }).setView(startCoords, 8)
+  map.value = L.map(mapContainer.value, { zoomControl: false }).setView(startCoords, 13)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: ''
@@ -67,9 +69,20 @@ function renderMarkers() {
         iconAnchor: [15, 30]
       })
 
-      const marker = L.marker([lat, lng], { icon })
-        .addTo(map.value)
-        .bindPopup(`<b>${restaurant.name}</b><br>${restaurant.city}, вул. ${restaurant.street}`)
+      let photoHtml = ''
+      if (restaurant.photoUrl) {
+        photoHtml = `<img src="${restaurant.photoUrl}" style="width:160px;height:100px;border-radius:8px;object-fit:cover;margin-bottom:5px" />`
+      }
+
+      const popupContent = `
+        <div style="text-align:center;">
+          <div style="font-weight:bold;margin-bottom:5px;">${restaurant.name}</div>
+          ${photoHtml}
+          <div style="font-size:12px;">${restaurant.city}, вул. ${restaurant.street}</div>
+        </div>
+      `
+
+      const marker = L.marker([lat, lng], { icon }).addTo(map.value).bindPopup(popupContent)
 
       markers.value.push(marker)
     }

@@ -107,15 +107,15 @@ async function submitReview(reviewData) {
 
 .left-panel {
   flex: 1;
-  max-width: 550px;
+  max-width: 400px;  /* уменьшаем ограничение левой части */
 }
 
 .right-panel {
-  flex: 1;
+  flex: 2; /* даем приоритет правой части */
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  max-width: 450px;
+  max-width: none; /* снимаем ограничение */
 }
 
 .loading {
