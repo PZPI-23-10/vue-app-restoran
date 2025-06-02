@@ -19,6 +19,17 @@
 
     <label>Вулиця</label>
     <input v-model="street" type="text" class="field" />
+
+    <button class="save-button" @click="editUser" :disabled="!hasChanges">
+      Зберегти зміни
+    </button>
+
+    <div v-if="showSuccessModal" class="modal-backdrop">
+      <div class="modal-window">
+        <p>Зміни виконані успішно!</p>
+        <button @click="showSuccessModal = false">Ок</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -34,35 +45,83 @@ export default {
       lastName: '',
       email: '',
       city: '', 
-      street: ''
+      street: '',
+      originalData: {
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        city: '',
+        street: ''
+      },
+      showSuccessModal: false
     }
   },
-  async mounted() {
-    const userId = localStorage.getItem('userId')
+  mounted() {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
 
-    if (!userId) {
-      console.warn('userId відсутній у localStorage')
-      return
-    }
+    axios.post('https://backend-restoran.onrender.com/api/Account', { userId })
+      .then(response => {
+        const user = response.data;
+        this.firstName = user.firstName || '';
+        this.middleName = user.middleName || '';
+        this.lastName = user.lastName || '';
+        this.email = user.email || '';
+        this.city = user.city || '';
+        this.street = user.street || '';
 
-    try {
-      const response = await axios.post(
-        'https://backend-restoran.onrender.com/api/Account',
-        { userId },
-        { headers: { 'Content-Type': 'application/json' } }
-      )
+        this.originalData = {
+          firstName: user.firstName || '',
+          middleName: user.middleName || '',
+          lastName: user.lastName || '',
+          city: user.city || '',
+          street: user.street || ''
+        };
+      })
+      .catch(err => console.error('Помилка при завантаженні користувача', err));
+  },
+  computed: {
+  hasChanges() {
+    if (!this.originalData) return false;
+    return (
+      this.firstName !== this.originalData.firstName ||
+      this.middleName !== this.originalData.middleName ||
+      this.lastName !== this.originalData.lastName ||
+      this.city !== this.originalData.city ||
+      this.street !== this.originalData.street
+    );
+  }
+},
+  methods: {
+    async editUser() {
+      try {
+        const token = localStorage.getItem('token')
+        console.log(token)
+        const response = await axios.post(
+          'https://backend-restoran.onrender.com/api/Account/EditUser',
+          {
+            firstName: this.firstName,
+            lastName: this.lastName,
+            middleName: this.middleName,
+            email: this.email,
+            city: this.city,
+            street: this.street
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        )
 
-      const user = response.data
-
-      this.firstName = user.firstName || ''
-      this.middleName = user.middleName || ''
-      this.lastName = user.lastName || ''
-      this.email = user.email || ''
-      this.city = user.city || 'Не вказано'
-      this.street = user.street || 'Не вказано'
-    } catch (error) {
-      console.error(' Помилка при отриманні даних профілю:', error)
-    }
+        this.showSuccessModal = true
+        this.originalData = { ...this.$data }
+      } catch (error) {
+        console.error('Помилка при збереженні змін:', error)
+        alert('Не вдалося зберегти зміни')
+      }
+    },
   }
 }
 </script>
@@ -91,6 +150,54 @@ label {
   border-radius: 6px;
   background-color: #f8f8f8;
   font-size: 14px;
+}
+
+.save-button {
+  margin-top: 24px;
+  padding: 10px 20px;
+  background-color: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.save-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-window {
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+}
+
+.modal-window button {
+  margin-top: 16px;
+  padding: 8px 16px;
+  background-color: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
 </style>
