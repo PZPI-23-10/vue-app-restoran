@@ -1,118 +1,83 @@
-  <template>
-    <div class="home-page">
+<template>
+  <div class="home-page">
+    <h2 class="cities-title">Популярні ресторани</h2>
 
-      <h2 class="cities-title">Популярні ресторани</h2>
-
-      <div class="restaurant-grid">
-        <div class="restaurant-card"
-            v-for="restaurant in displayedRestaurants"
-            :key="restaurant.id"
-            @click="goToRestaurant(restaurant.id)">
-          <img :src="getPhotoUrl(restaurant)" alt="Фото ресторану" class="restaurant-img" />
-          <div class="restaurant-card-content">
-            <div class="header-row">
-              <h3>{{ restaurant.name }}</h3>
-              <div class="rating">{{ getRatingDisplay(restaurant) }}</div>
-            </div>
-            <p>{{ restaurant.city }}, {{ restaurant.street }}</p>
-            <p>{{ restaurant.cuisines?.[0]?.cuisine?.name || 'Без кухні' }}</p>
+    <div class="restaurant-grid">
+      <div
+        class="restaurant-card"
+        v-for="restaurant in displayedRestaurants"
+        :key="restaurant.id"
+        @click="goToRestaurant(restaurant.id)"
+      >
+        <img :src="getPhotoUrl(restaurant)" alt="Фото ресторану" class="restaurant-img" />
+        <div class="restaurant-card-content">
+          <div class="header-row">
+            <h3>{{ restaurant.name }}</h3>
+            <div class="rating">{{ getRatingDisplay(restaurant) }}</div>
           </div>
+          <p>{{ restaurant.city }}, {{ restaurant.street }}</p>
+          <p>{{ restaurant.cuisines?.[0]?.cuisine?.name || 'Без кухні' }}</p>
         </div>
       </div>
     </div>
-  </template>
+  </div>
+</template>
 
-  <script setup>
-  import { ref, onMounted, computed } from 'vue'
-  import { useRouter } from 'vue-router'
-  import axios from 'axios'
-  import DatePicker from '../components/DatePicker.vue'
-  import DropdownSelect from '../components/DropdownSelect.vue'
+<script setup>
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { getAllRestaurants } from '../services/restaurantService'
 
-  const cachedRestaurants = ref(null)
-  const router = useRouter()
+const router = useRouter()
+const restaurants = ref([])
 
-  const time = ref('19:00')
-  const people = ref(2)
-  const restaurants = ref([])
-
-  const timeOptions = [
-    { label: '09:00', value: '09:00' },
-    { label: '10:00', value: '10:00' },
-    { label: '11:00', value: '11:00' },
-    { label: '12:00', value: '12:00' },
-    { label: '13:00', value: '13:00' },
-    { label: '14:00', value: '14:00' },
-    { label: '15:00', value: '15:00' },
-    { label: '16:00', value: '16:00' },
-    { label: '17:00', value: '17:00' },
-    { label: '18:00', value: '18:00' },
-    { label: '19:00', value: '19:00' },
-    { label: '20:00', value: '20:00' }
-  ]
-
-  const peopleOptions = [
-    { label: '1 людина', value: 1 },
-    { label: '2 людини', value: 2 },
-    { label: '3 людини', value: 3 },
-    { label: '4 людини', value: 4 },
-    { label: '5 людей', value: 5 },
-    { label: '6 людей', value: 6 }
-  ]
-
-  onMounted(async () => {
-    if (cachedRestaurants.value) {
-      restaurants.value = cachedRestaurants.value
-      return
-    }
-
-    try {
-      const response = await axios.get('https://backend-restoran.onrender.com/api/Restaurant')
-      restaurants.value = response.data ?? []
-      cachedRestaurants.value = restaurants.value
-    } catch (error) {
-      console.error('Помилка при завантаженні ресторанів:', error)
-    }
-  })
-
-  function getAverageRating(restaurant) {
-    if (!restaurant.reviews || restaurant.reviews.length === 0) {
-      return null
-    }
-    const validReviews = restaurant.reviews.filter(r => r.rating !== null && r.rating !== undefined)
-    if (validReviews.length === 0) {
-      return null
-    }
-    const sum = validReviews.reduce((total, review) => total + review.rating, 0)
-    return (sum / validReviews.length).toFixed(1)
+onMounted(async () => {
+  try {
+    restaurants.value = await getAllRestaurants(4)  // pageSize можно регулировать
+  } catch (error) {
+    console.error('Помилка при завантаженні ресторанів:', error)
   }
+})
 
-  function getRatingDisplay(restaurant) {
-    const avg = getAverageRating(restaurant)
-    return avg !== null ? `⭐ ${avg}/5` : '☆ 0/5'
+function getAverageRating(restaurant) {
+  if (!restaurant.reviews || restaurant.reviews.length === 0) {
+    return null
   }
-
-  const displayedRestaurants = computed(() => {
-    return [...restaurants.value]
-      .sort((a, b) => {
-        const ratingA = parseFloat(getAverageRating(a)) || 0
-        const ratingB = parseFloat(getAverageRating(b)) || 0
-        return ratingB - ratingA
-      })
-      .slice(0, 4)
-  })
-
-  function goToRestaurant(id) {
-    router.push(`/restaurant/${id}`)
+  const validReviews = restaurant.reviews.filter(r => r.rating !== null && r.rating !== undefined)
+  if (validReviews.length === 0) {
+    return null
   }
-  function getPhotoUrl(restaurant) {
-    if (restaurant.photos && restaurant.photos.length > 0) {
-      return restaurant.photos[0].url;
-    }
-    return '/images/default_restaurant.jpg';
-  }
+  const sum = validReviews.reduce((total, review) => total + review.rating, 0)
+  return (sum / validReviews.length).toFixed(1)
+}
 
-  </script>
+function getRatingDisplay(restaurant) {
+  const avg = getAverageRating(restaurant)
+  return avg !== null ? `⭐ ${avg}/5` : '☆ 0/5'
+}
+
+const displayedRestaurants = computed(() => {
+  return [...restaurants.value]
+    .sort((a, b) => {
+      const ratingA = parseFloat(getAverageRating(a)) || 0
+      const ratingB = parseFloat(getAverageRating(b)) || 0
+      return ratingB - ratingA
+    })
+    .slice(0, 4)
+})
+
+function goToRestaurant(id) {
+  router.push(`/restaurant/${id}`)
+}
+
+function getPhotoUrl(restaurant) {
+  if (restaurant.photos && restaurant.photos.length > 0) {
+    return restaurant.photos[0].url
+  }
+  return '/images/default_restaurant.jpg'
+}
+</script>
+
 
   <style scoped>
   .home-page {

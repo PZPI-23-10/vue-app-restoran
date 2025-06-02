@@ -17,7 +17,7 @@
       <!-- Правая колонка: Блюда -->
       <div class="right-panel">
         <h2>Меню ресторану</h2>
-        <DishesPrint :dishes="restaurant.dishes" />
+        <DishesPrint :dishes="restaurant.dishes ?? []" />
       </div>
     </div>
   </div>
@@ -107,15 +107,15 @@ async function submitReview(reviewData) {
 
 .left-panel {
   flex: 1;
-  max-width: 400px;  /* уменьшаем ограничение левой части */
+  max-width: 400px;
 }
 
 .right-panel {
-  flex: 2; /* даем приоритет правой части */
+  flex: 2;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  max-width: none; /* снимаем ограничение */
+  max-width: none;
 }
 
 .loading {

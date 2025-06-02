@@ -37,7 +37,6 @@ import axios from 'axios'
 import { GoogleLogin } from 'vue3-google-login'
 import { showToast } from '../services/toast.js'
 
-showToast('Помилка входу', 'error')
 
 
 const props = defineProps({

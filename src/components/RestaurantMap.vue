@@ -7,10 +7,10 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, nextTick } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { getRestaurants } from '../services/restaurantService'
+import { getAllRestaurants } from '../services/restaurantService'
 import { cityCoords } from '../services/cityCoords'
 
 const props = defineProps({
@@ -31,18 +31,20 @@ function getCoordsByCity(cityName) {
       return cityCoords[region][cityName]
     }
   }
-  return [50.4501, 30.5234] // дефолт Киев
+  return null
 }
-
 onMounted(async () => {
-  await nextTick()
-
-  const data = await getRestaurants(true)
+  const data = await getAllRestaurants(10)
   allRestaurants.value = data
 
-  const startCoords = getCoordsByCity(props.selectedCity)
+  if (!mapContainer.value) {
+    console.error('Map container не готов!')
+    return
+  }
 
-  map.value = L.map(mapContainer.value, { zoomControl: false }).setView(startCoords, 13)
+  const startCoords = getCoordsByCity(props.selectedCity) || [50.4501, 30.5234]
+
+  map.value = L.map(mapContainer.value, { zoomControl: false }).setView(startCoords, 8)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: ''
@@ -52,6 +54,7 @@ onMounted(async () => {
 
   renderMarkers()
 })
+
 
 function renderMarkers() {
   markers.value.forEach(m => map.value.removeLayer(m))
@@ -71,18 +74,20 @@ function renderMarkers() {
 
       let photoHtml = ''
       if (restaurant.photoUrl) {
-        photoHtml = `<img src="${restaurant.photoUrl}" style="width:160px;height:100px;border-radius:8px;object-fit:cover;margin-bottom:5px" />`
+        photoHtml = `<img src="${restaurant.photoUrl}" alt="Фото ресторану" style="width:160px; height:100px; object-fit:cover; border-radius:8px;" />`
       }
 
       const popupContent = `
-        <div style="text-align:center;">
-          <div style="font-weight:bold;margin-bottom:5px;">${restaurant.name}</div>
+        <div style="text-align:center; max-width:180px;">
+          <div style="font-weight:bold; font-size:16px; margin-bottom: 8px;">${restaurant.name}</div>
           ${photoHtml}
-          <div style="font-size:12px;">${restaurant.city}, вул. ${restaurant.street}</div>
+          <div style="font-size:12px; margin-top: 6px;">${restaurant.city}, вул. ${restaurant.street}</div>
         </div>
       `
 
-      const marker = L.marker([lat, lng], { icon }).addTo(map.value).bindPopup(popupContent)
+      const marker = L.marker([lat, lng], { icon })
+        .addTo(map.value)
+        .bindPopup(popupContent)
 
       markers.value.push(marker)
     }
@@ -118,7 +123,6 @@ watch(() => props.selectedCity, (newCity) => {
   width: 100%;
   height: 100%;
 }
-
 .map-background {
   position: relative;
   width: 100%;
