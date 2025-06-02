@@ -1,8 +1,5 @@
 import * as signalR from '@microsoft/signalr';
-import axios from 'axios';
 import AuthService from './auth.service';
-
-const API_URL = 'https://backend-restoran.onrender.com/api/chat/';
 
 class ChatService {
   constructor() {
@@ -16,10 +13,13 @@ class ChatService {
       throw new Error('User not authenticated');
     }
 
+    const options = {
+      accessTokenFactory: () => user.token,
+      transport: signalR.HttpTransportType.LongPolling // Пока только LongPolling для Render Free
+    };
+
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl('https://backend-restoran.onrender.com/hubs/chat', {
-        accessTokenFactory: () => user.token
-      })
+      .withUrl('https://backend-restoran.onrender.com/hubs/chat', options)
       .configureLogging(signalR.LogLevel.Information)
       .build();
 
@@ -45,14 +45,6 @@ class ChatService {
   async sendMessage(text) {
     if (!this.connection || !this.sessionId) throw new Error('Not connected to a chat session');
     await this.connection.invoke('SendMessage', this.sessionId, text);
-  }
-
-  async getActiveSessions() {
-    const user = AuthService.getCurrentUser();
-    const headers = AuthService.getAuthHeader();
-
-    const response = await axios.get(API_URL + 'sessions', { headers });
-    return response.data;
   }
 
   handleReceiveMessage = (message) => {

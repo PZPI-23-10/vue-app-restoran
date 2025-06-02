@@ -82,8 +82,8 @@ async function handleLogin() {
     }
 
     console.log('Успішний вхід:', data)
-
-    saveAuthData(data)
+saveAuthData(data);
+window.location.href = '/';
 
     emit('close')
   } catch (error) {
