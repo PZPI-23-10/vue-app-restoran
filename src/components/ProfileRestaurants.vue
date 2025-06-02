@@ -78,6 +78,7 @@
     <RestaurantEdit 
       v-if="isEditMode" 
       :restaurant="restaurantToEdit" 
+      :mode="restaurantToEdit.role"
       @close="closeEdit"
     />
 
@@ -117,29 +118,40 @@ export default {
     },
 
     async loadRestaurantDetails(restaurantId) {
-          try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Get', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`
-              },
-              body: JSON.stringify({ RestaurantId: restaurantId })
-            });
+      console.log(restaurantId)
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('https://backend-restoran.onrender.com/api/Restaurant/Get', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ RestaurantId: restaurantId })
+        });
 
-            if (!res.ok) {
-              const errorData = await res.json();
-              throw new Error(`Ошибка сервера: ${res.status} - ${JSON.stringify(errorData)}`);
-            }
+        if (!res.ok) {
+          const errorText = await res.text(); 
+          throw new Error(`Ошибка сервера: ${res.status} - ${errorText}`);
+        }
 
-            const data = await res.json();
-            this.restaurantToEdit = data;
-            this.isEditMode = true;
-          } catch (error) {
-            console.error('Не вдалося завантажити дані ресторану:', error);
-          }
-      },
+        const data = await res.json();
+        console.log(data)
+
+        let role = 'moderator'; 
+        if (this.ownedRestaurants.find(r => r.id === restaurantId)) {
+          role = 'owner';
+        } else if (this.moderatedRestaurants.find(r => r.id === restaurantId)) {
+          role = 'moderator';
+        }
+
+        console.log('Ответ сервера:', data);
+        this.restaurantToEdit = { ...data, role };
+        this.isEditMode = true;
+      } catch (error) {
+        console.error('Не вдалося завантажити дані ресторану:', error);
+      }
+    },
 
     isOwner(restaurant) {
         const userId = localStorage.getItem('userId');
@@ -168,7 +180,7 @@ export default {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
             },
-            data: { RestaurantId: restaurantId } // с большой буквы!
+            data: { RestaurantId: restaurantId }
         })
 
         this.restaurants = this.restaurants.filter(r => r.id !== restaurantId)
@@ -199,7 +211,6 @@ export default {
       
     );
 
-    // Всегда используем `this.`
     this.ownedRestaurants = (res.data.ownedRestasurants || []).map(r => ({
       ...r,
       photoUrl: r.photoUrl || 'https://via.placeholder.com/150?text=No+Image',
@@ -222,7 +233,7 @@ export default {
 
 <style scoped>
 .restaurant-item.moderator {
-  border-left: 4px solid #4caf50; /* зелёная полоса */
+  border-left: 4px solid #4caf50; 
 }
 .moderator-section h3 {
   margin-top: 24px;
@@ -231,7 +242,7 @@ export default {
 }
 
 .profile-restaurants {
-  max-width: 1000px; /* увеличили ширину */
+  max-width: 1000px; 
   margin: 0 auto;
   padding: 20px 30px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -245,7 +256,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
-  flex-wrap: wrap; /* чтобы кнопка не уходила с экрана */
+  flex-wrap: wrap; 
   gap: 15px;
 }
 
@@ -257,7 +268,7 @@ h2 {
 
 .create-btn {
   padding: 12px 24px;
-  background: linear-gradient(45deg, #ff6f00, #d84315); /* градиент оранжево-красный */
+  background: linear-gradient(45deg, #ff6f00, #d84315); 
   color: white;
   border: none;
   border-radius: 8px;
@@ -311,7 +322,7 @@ h2 {
   width: 100px;
   height: 100px;
   border-radius: 12px;
-  object-fit: contain; /* показываем полностью, без обрезки */
+  object-fit: contain; 
   background: #eee;
   padding: 6px;
   box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
@@ -352,8 +363,8 @@ h2 {
 }
 
 .tag {
-  background-color: #ffe0b2; /* светло-оранжевый */
-  color: #bf360c; /* темно-красный */
+  background-color: #ffe0b2; 
+  color: #bf360c; 
   padding: 4px 12px;
   border-radius: 16px;
   font-size: 13px;

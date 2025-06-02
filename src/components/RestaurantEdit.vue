@@ -15,7 +15,7 @@
         <div class="gallery-container">
           <button class="gallery-arrow left" @click.stop="prevPhoto">&lt;</button>
 
-          <div class="gallery-frame" @click="handleSlotClick">
+          <div class="gallery-frame" @click="!isModeratorMode && handleSlotClick">
             <img
               v-if="restaurantData.gallery && restaurantData.gallery[activeIndex]"
               :src="restaurantData.gallery[activeIndex]"
@@ -38,7 +38,7 @@
           </div>
 
           <button
-          v-if="restaurantData && restaurantData.gallery && restaurantData.gallery[activeIndex]"
+            v-if="!isModeratorMode && restaurantData.gallery && restaurantData.gallery[activeIndex]"
             class="remove-photo"
             @click="removePhoto(activeIndex)"
           >
@@ -53,32 +53,36 @@
           type="text"
           placeholder="Назва ресторану"
           v-model="restaurantData.name"
+          :disabled="isModeratorMode"
         />
+
         <textarea
           class="description-input"
           placeholder="Опис"
           v-model="restaurantData.description"
+          :disabled="isModeratorMode"
         ></textarea>
 
         <div class="dress-code-section">
           <div class="dress-code-row">
             <div class="tag-select">
-          <label>Дресс-код</label>
-          <select @change="addTag($event, 'dressCode')" v-model="selectedDressCodeId">
-            <option value="">Оберіть варіант</option>
-            <option v-for="d in dressCodeOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
-          </select>
-          <div class="selected-tags">
-            <span 
-              v-for="(tag, index) in restaurantData.dressCode" 
-              :key="tag.id"
-              class="tag selected"
-              @click="removeTag(index, 'dressCode')"
-            >
-              {{ tag.name }} ✕
-            </span>
-          </div>
-        </div>
+              <label>Дресс-код</label>
+              <select @change="addTag($event, 'dressCode')" v-model="selectedDressCodeId">
+                <option value="">Оберіть варіант</option>
+                <option v-for="d in dressCodeOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
+              </select>
+
+              <div class="selected-tags">
+                <span
+                  v-for="(tag, index) in restaurantData.dressCode"
+                  :key="tag.id"
+                  class="tag selected"
+                  @click="removeTag(index, 'dressCode')"
+                >
+                  {{ tag.name }} ✕
+                </span>
+              </div>
+            </div>
             <div class="checkbox-pair">
               <label class="option-checkbox">
                 <input type="checkbox" v-model="restaurantData.hasParking" />
@@ -136,8 +140,12 @@
       <div class="middle-buttons">
         <button @click="activeForm = 'dishes'">🍽️ Редагувати страви</button>
         <button @click="activeForm = 'hours'">Редагувати графік роботи</button>
-        <button @click="activeForm = 'moderators'">Редагувати менеджерів👨‍🍳</button>
-        <button @click="openExtraEditSettings">✏️ Редагувати додаткові дані</button>
+        <button @click="activeForm = 'moderators'" v-if="!isModeratorMode">
+          Редагувати менеджерів👨‍🍳
+        </button>
+        <button @click="openExtraEditSettings" v-if="!isModeratorMode">
+          ✏️ Редагувати додаткові дані
+        </button>
       </div>
 
       <transition name="fade-slide">
@@ -232,14 +240,14 @@
             :key="index"
             class="grid-cell"
             @dragover.prevent
-            @drop="onDrop(index)"
+            @drop="!isModeratorMode && onDrop(index)"
           >
             <div
               v-if="gridElements[index]"
               class="grid-item"
               draggable="true"
               @dragstart="onGridItemDragStart(index)"
-              @click.stop="handleGridItemClick(index)"
+              @click.stop="!isModeratorMode && handleGridItemClick(index)"
             >
               <img
                 :src="gridElements[index].image"
@@ -252,8 +260,10 @@
 
           <div class="floor-controls">
             <div class="floor-buttons">
-              <button @click="addFloor">+ Додати поверх</button>
-              <button @click="removeFloor" :disabled="restaurantData.layout.length === 1">- Видалити</button>
+              <button @click="!isModeratorMode && addFloor()" :disabled="isModeratorMode">+ Додати поверх</button>
+              <button 
+                  @click="!isModeratorMode && removeFloor()" 
+                  :disabled="isModeratorMode || restaurantData.layout.length === 1"  >- Видалити</button>
             </div>
             <div class="floor-tabs">
               <button
@@ -266,7 +276,7 @@
               </button>
             </div>
           </div>
-          <div class="elements-bottom">
+          <div class="elements-bottom" v-if="!isModeratorMode">
             <h3>Конструктор</h3>
               <div class="mode-buttons">
                 <button 
@@ -331,6 +341,10 @@ export default {
     ExtraEditSettings
   },
   computed: {
+  isModeratorMode() {
+    return this.mode === 'moderator';
+  },
+
   gridElements() {
     if (!this.restaurantData || !this.restaurantData.layout) return null;
     return this.restaurantData.layout[this.activeFloorIndex];
@@ -364,10 +378,13 @@ export default {
         type: Object,
         required: true
     },
+      mode: {
+        type: String,
+        default: 'owner'  
+    }
   },
   data() {
     return {
-    restaurantData: null,
     dishes: [],      
     schedule: [],
     moderators: [],
@@ -472,6 +489,10 @@ export default {
         .filter(t => t.tag && t.tag.name)
         .map(t => ({ id: t.id, name: t.tag.name }));
 
+      this.restaurantData.dressCode = (this.restaurant.dressCodes || [])
+        .map(dc => dc.dressCode)
+        .filter(Boolean);  
+
       this.restaurantData.dishes = (this.restaurant.dishes || []).map(dish => ({
         ...dish,
         tags: (dish.tags || []).map(t => t.tag?.name).filter(Boolean),
@@ -515,20 +536,17 @@ export default {
       }
 
       if (Array.isArray(parsedLayout) && parsedLayout.length && typeof parsedLayout[0] === 'object' && 'Floor' in parsedLayout[0]) {
-        // сгруппируем объекты по этажам
         const floorsMap = new Map();
         parsedLayout.forEach(item => {
           if (!floorsMap.has(item.Floor)) floorsMap.set(item.Floor, []);
           floorsMap.get(item.Floor).push(item);
         });
-        // Получаем массив этажей с объектами
         const floorsArray = Array.from(floorsMap.values());
         this.restaurantData = {
           ...this.restaurant,
           layout: floorsArray.map(floorData => this.convertLayoutToGrid(floorData))
         };
       } else if (Array.isArray(parsedLayout)) {
-        // если просто массив этажей
         this.restaurantData = {
           ...this.restaurant,
           layout: parsedLayout.map(floorData => this.convertLayoutToGrid(floorData))
@@ -546,7 +564,7 @@ export default {
   convertLayoutToGrid(layoutArray) {
     const grid = new Array(120).fill(null);
     layoutArray.forEach(item => {
-      const index = item.Y * 12 + item.X;  // Внимание на регистр — у тебя с большой буквы X и Y
+      const index = item.Y * 12 + item.X;  
       const element = this.getElementByTypeId(item.TypeId);
       grid[index] = {
         id: item.Id,
@@ -628,7 +646,6 @@ export default {
 
           if (typeId === 0) return acc; 
 
-          // Определяем floor
           const floor = item.floor !== undefined ? item.floor : floorNumber;
 
           const x = itemIndex % GRID_WIDTH;
@@ -673,39 +690,31 @@ export default {
     },
 
     addTag(event, type) {
-      let selectedId = '';
-      let optionsArray = [];
+      if (this.isModeratorMode) return;
 
-      if (type === 'cuisine') {
-        selectedId = this.selectedCuisineId;
-        optionsArray = this.cuisineOptions;
-      } else if (type === 'tags') {
-        selectedId = this.selectedTagId;
-        optionsArray = this.tagOptions;
-      } else if (type === 'dressCode') {
-        selectedId = this.selectedDressCodeId;
-        optionsArray = this.dressCodeOptions;
-      }
-
+      const selectedId = event.target.value;
       if (!selectedId) return;
 
-      const item = optionsArray.find(opt => opt.id === selectedId);
-      if (!item) return;
+      let selectedList = [];
+      if (type === 'dressCode') selectedList = this.dressCodeOptions;
+      if (type === 'cuisine') selectedList = this.cuisineOptions;
+      if (type === 'tags') selectedList = this.tagOptions;
 
-      if (!this.restaurantData[type]) {
-        this.restaurantData[type] = [];
+      const selectedItem = selectedList.find(item => item.id === selectedId);
+      if (!selectedItem) return;
+
+      if (!this.restaurantData[type].some(tag => tag.id === selectedId)) {
+        this.restaurantData[type].push(selectedItem);
       }
 
-      if (!this.restaurantData[type].some(t => t.id === selectedId)) {
-        this.restaurantData[type].push(item);
-      }
-
+      if (type === 'dressCode') this.selectedDressCodeId = '';
       if (type === 'cuisine') this.selectedCuisineId = '';
-      else if (type === 'tags') this.selectedTagId = '';
-      else if (type === 'dressCode') this.selectedDressCodeId = '';
+      if (type === 'tags') this.selectedTagId = '';
     },
-    
+        
     removeTag(index, type) {
+      if (this.isModeratorMode) return;
+
       this.restaurantData[type].splice(index, 1);
     },
 
@@ -926,6 +935,8 @@ export default {
       this.closeForm();
     },
     addFloor() {
+        if (this.isModeratorMode) return;
+
         this.restaurantData.layout.push(Array(120).fill(null));
         this.activeFloorIndex = this.restaurantData.layout.length - 1;
     },
@@ -944,6 +955,8 @@ export default {
     },
 
     onDragStart(el, event) {
+        if (this.isModeratorMode) return;
+
         this.draggedElement = { item: el };
         this.rotationDuringDrag = 0;
         this.previewX = event.clientX;
@@ -958,6 +971,8 @@ export default {
     },
 
     onDrop(index) {
+        if (this.isModeratorMode) return;
+
         if (!this.draggedElement || !this.draggedElement.item) return;
 
         if (typeof this.draggedElement.index === 'number') {
@@ -977,6 +992,8 @@ export default {
     },
 
     handleGridItemClick(index) {
+        if (this.isModeratorMode) return;
+
         const element = this.gridElements[index];
         if (!element) return;
 
