@@ -7,7 +7,14 @@
     </div>
 
     <div class="right-buttons">
-      <button class="download-btn">Завантажити додаток</button>
+      <!-- Заменили кнопку на ссылку -->
+      <a
+        href="https://drive.google.com/uc?export=download&id=1habu7kATKt8uOhTY7O8jLU9kCm77XEtk"
+        download
+        class="download-btn"
+      >
+        Завантажити додаток
+      </a>
 
       <div class="profile-wrapper" v-if="isAuthenticated">
         <button class="profile-btn" @click.stop="toggleMenu">

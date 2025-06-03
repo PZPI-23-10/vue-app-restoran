@@ -48,7 +48,7 @@ function goToRestaurant(id) {
   if (id) {
     router.push(`/restaurant/${id}`)
   } else {
-    alert('У цього ресторану немає ID!')
+
   }
 }
 
