@@ -71,10 +71,7 @@ function goToRestaurant(id) {
 }
 
 function getPhotoUrl(restaurant) {
-  if (restaurant.photos && restaurant.photos.length > 0) {
-    return restaurant.photos[0].url
-  }
-  return '/images/default_restaurant.jpg'
+  return restaurant.photoUrl || '/images/default_restaurant.jpg'
 }
 </script>
 
