@@ -8,7 +8,6 @@ import GoogleAuthCallback from '../components/GoogleAuthCallback.vue'
 
 import ProfileUser from '../components/ProfileUser.vue'
 import ProfileFavoriteDishes from '../components/ProfileFavoriteDishes.vue'
-import ProfileReservations from '../components/ProfileReservations.vue'
 import ProfileRestaurants from '../components/ProfileRestaurants.vue'
 import ProfileModeration from '../components/ProfileModeration.vue'
 import ChatPage from '../components/ChatPage.vue'
@@ -30,7 +29,6 @@ const routes = [
       { path: '', redirect: 'info' },
       { path: 'info', component: ProfileUser },
       { path: 'favorites', component: ProfileFavoriteDishes },
-      { path: 'reservations', component: ProfileReservations },
       { path: 'restaurants', component: ProfileRestaurants },
       { path: 'moderation', component: ProfileModeration }
     ]

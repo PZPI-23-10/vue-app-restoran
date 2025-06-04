@@ -9,7 +9,6 @@
       <div class="profile-content">
         <aside class="sidebar">
           <ul>
-            <li><router-link to="/profile/reservations" active-class="active">Резервації</router-link></li>
             <li><router-link to="/profile/info" active-class="active">Інфо акаунта</router-link></li>
             <li><router-link to="/profile/restaurants" active-class="active">Ресторани</router-link></li>
             <li v-if="hasModeration"><router-link to="/profile/moderation" active-class="active">Модерація</router-link></li>
